@@ -470,7 +470,7 @@ export default function HotelMap({
               >
                 {selected.sublabel}
               </span>
-              {activeRole === 'staff' && selected.roomData?.guest_name && (
+              {(activeRole === 'staff' || activeRole === 'responder') && selected.roomData?.guest_name && (
                 <span className="text-white/60 text-xs">
                   Guest: {selected.roomData.guest_name} · {selected.roomData.language}
                 </span>

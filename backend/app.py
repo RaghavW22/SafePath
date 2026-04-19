@@ -317,13 +317,15 @@ def create_alert():
     severity = 1
     if GEMINI_KEY:
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            prompt = f"Analyze the following emergency message and return a single integer severity score from 1 to 5 (1=low, 5=critical): '{message}'"
+            model = genai.GenerativeModel('gemini-pro')
+            prompt = f"Analyze the following emergency message and return exactly one single number from 1 to 5 (1=low, 5=critical). Do not output any other text or explanation. Message: '{message}'"
             resp = model.generate_content(prompt)
-            severity = int(''.join(filter(str.isdigit, resp.text)))
-            severity = max(1, min(5, severity))
-        except Exception:
-            pass
+            import re
+            m = re.search(r'[1-5]', resp.text)
+            if m:
+                severity = int(m.group(0))
+        except Exception as e:
+            print(f"Severity AI Error: {e}")
     
     now = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
     
@@ -378,13 +380,13 @@ def ai_suggest_broadcast():
     target = request.args.get('target', 'all')
     if GEMINI_KEY:
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-pro')
             prompt = f"Write a single sentence emergency broadcast announcement to guests in {target}. Keep it extremely concise, professional, and clear."
             resp = model.generate_content(prompt)
             suggestion = resp.text.strip().replace('"', '')
             return jsonify({'suggestion': suggestion})
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Broadcast AI Error: {e}")
     return jsonify({'suggestion': f"Attention {target} guests. Please remain calm and proceed to the nearest emergency exit."})
 
 @app.route('/api/broadcasts', methods=['POST'])

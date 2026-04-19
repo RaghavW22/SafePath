@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Users, AlertOctagon, ScrollText, Clock } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
 import GlassCard from '../../components/GlassCard/GlassCard';
-import FloorPlan from '../../components/FloorPlan/FloorPlan';
+import HotelMap from '../../components/HotelMap/HotelMap';
 import { useAppStore } from '../../store/useAppStore';
-import { MOCK_PRIORITY_ROOMS, MOCK_EVENTS } from '../../constants';
+import { api, type ApiAlert, type RoomStatus, type StatsResponse, type ApiBroadcast } from '../../api/client';
 
 function useClockTick(): string {
   const [time, setTime] = useState(new Date().toLocaleTimeString());
@@ -31,6 +31,31 @@ export default function ResponderPortal() {
   const [shimmer, setShimmer] = useState(true);
   const logRef = useRef<HTMLDivElement>(null);
 
+  const [rooms,           setRooms]           = useState<RoomStatus[]>([]);
+  const [stats,           setStats]           = useState<StatsResponse | null>(null);
+  const [alerts,          setAlerts]          = useState<ApiAlert[]>([]);
+  const [broadcasts,      setBroadcasts]      = useState<ApiBroadcast[]>([]);
+
+  const activeAlerts = alerts.filter(a => a.status === 'active');
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [rRes, sRes, aRes, bRes] = await Promise.all([
+        api.getRooms(),
+        api.getStats(),
+        api.getAlerts(),
+        api.getBroadcasts()
+      ]);
+      setRooms(rRes);
+      setStats(sRes);
+      setAlerts(aRes);
+      setBroadcasts(bRes);
+      setLastUpdated(0);
+    } catch (e) {
+      // offline/error handling
+    }
+  }, []);
+
   useEffect(() => {
     setActiveRole('responder');
     const timeout = setTimeout(() => setShimmer(false), 1500);
@@ -38,7 +63,13 @@ export default function ResponderPortal() {
   }, [setActiveRole]);
 
   useEffect(() => {
-    const id = setInterval(() => setLastUpdated((p) => p + 10), 10000);
+    fetchData();
+    const id = setInterval(fetchData, 5000);
+    return () => clearInterval(id);
+  }, [fetchData]);
+
+  useEffect(() => {
+    const id = setInterval(() => setLastUpdated((p) => p + 1), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -46,18 +77,52 @@ export default function ResponderPortal() {
     if (logRef.current) {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
-  }, []);
+  }, [alerts, broadcasts]);
 
-  const occupancyRows = [
-    { floor: 1, rooms: 6, occupied: 4, sos: 1 },
-    { floor: 2, rooms: 6, occupied: 3, sos: 0 },
-    { floor: 3, rooms: 6, occupied: 2, sos: 1 },
-  ];
-  const totalOccupied = occupancyRows.reduce((s, r) => s + r.occupied, 0);
-  const totalRooms = occupancyRows.reduce((s, r) => s + r.rooms, 0);
-  const totalSOS = occupancyRows.reduce((s, r) => s + r.sos, 0);
+  const occupancyRows = useMemo(() => {
+    return stats?.byFloor.map(f => ({
+      floor: f.floor,
+      rooms: f.total,
+      occupied: f.occupied,
+      sos: activeAlerts.filter(a => a.floor === f.floor).length
+    })) || [];
+  }, [stats, activeAlerts]);
 
-  const occupancyPct = Math.round((totalOccupied / totalRooms) * 100);
+  const totalOccupied = stats?.occupied || 0;
+  const totalRooms    = stats?.total || 1;
+  const totalSOS      = activeAlerts.length;
+  const occupancyPct  = Math.round((totalOccupied / totalRooms) * 100) || 0;
+
+  const priorityRooms = useMemo(() => {
+    return activeAlerts.slice().sort((a, b) => b.severity - a.severity || new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()).map(a => ({
+      roomNumber: a.room_number,
+      floor: a.floor,
+      severity: a.severity,
+      elapsedMinutes: Math.floor((Date.now() - new Date(a.timestamp).getTime()) / 60000),
+      status: 'unconfirmed'
+    }));
+  }, [activeAlerts]);
+
+  const appEvents = useMemo(() => {
+    const arr: any[] = [];
+    alerts.forEach(a => {
+      arr.push({
+        time: new Date(a.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        timestamp: new Date(a.timestamp).getTime(),
+        text: `[Room ${a.room_number}] ${a.message}`,
+        color: a.status === 'active' ? 'red' : 'green'
+      });
+    });
+    broadcasts.forEach(b => {
+      arr.push({
+        time: new Date(b.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        timestamp: new Date(b.timestamp).getTime(),
+        text: `[Broadcast: ${b.target}] ${b.message}`,
+        color: 'blue'
+      });
+    });
+    return arr.sort((x, y) => y.timestamp - x.timestamp);
+  }, [alerts, broadcasts]);
 
   return (
     <div className="min-h-screen bg-navy flex flex-col">
@@ -85,13 +150,15 @@ export default function ResponderPortal() {
           </div>
 
           {shimmer ? (
-            <div className="w-full h-56 rounded-xl shimmer" />
+            <div className="w-full h-[400px] rounded-xl shimmer" />
           ) : (
-            <FloorPlan
-              dangerZones={dangerZones}
-              sosRooms={[102, 301]}
-              readOnly={true}
-            />
+            <div className="bg-navy-light rounded-xl overflow-hidden border border-white/10" style={{ height: '400px' }}>
+              <HotelMap
+                rooms={rooms}
+                activeAlerts={activeAlerts}
+                readOnly={false}
+              />
+            </div>
           )}
 
           <p className="text-white/40 text-xs">
@@ -174,17 +241,20 @@ export default function ResponderPortal() {
           </div>
 
           <div className="flex flex-col gap-4">
-            {MOCK_PRIORITY_ROOMS.map((room, index) => (
-              <motion.div
-                key={room.rank}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+            {priorityRooms.length === 0 ? (
+              <p className="text-white/40 text-sm py-4 text-center">No active emergencies</p>
+            ) : (
+              priorityRooms.map((room, index) => (
+                <motion.div
+                  key={`${room.roomNumber}-${index}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className="flex flex-col gap-1.5"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-7 h-7 rounded-full bg-danger flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                    {room.rank}
+                    S{room.severity}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -215,7 +285,7 @@ export default function ResponderPortal() {
                   />
                 </div>
               </motion.div>
-            ))}
+            )))}
           </div>
         </GlassCard>
 
@@ -230,7 +300,10 @@ export default function ResponderPortal() {
               ref={logRef}
               className="max-h-48 overflow-y-auto custom-scroll flex flex-col gap-0"
             >
-              {MOCK_EVENTS.map((event, idx) => (
+              {appEvents.length === 0 && (
+                 <p className="text-white/40 text-sm p-4 text-center mb-8">No events logged yet.</p>
+              )}
+              {appEvents.map((event, idx) => (
                 <div
                   key={idx}
                   className="flex gap-3 items-start py-2 border-b border-white/5"
