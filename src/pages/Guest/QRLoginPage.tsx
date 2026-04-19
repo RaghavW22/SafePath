@@ -390,16 +390,15 @@ export default function QRLoginPage() {
             )}
 
           </AnimatePresence>
+          <div className="mt-6 pt-4 border-t border-white/10 flex justify-center">
+            <button
+              onClick={() => navigate('/')}
+              className="text-white/40 text-sm hover:text-white transition-colors"
+            >
+              ← Back to Homepage
+            </button>
+          </div>
         </GlassCard>
-
-        <div className="mt-8">
-          <button
-            onClick={() => navigate('/')}
-            className="text-white/40 text-sm hover:text-white transition-colors"
-          >
-            ← Back to Homepage
-          </button>
-        </div>
       </div>
     </Layout>
   );

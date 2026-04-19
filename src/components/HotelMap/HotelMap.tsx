@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { RoomStatus } from '../../api/client';
 import type { DangerZone } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
@@ -204,6 +204,8 @@ interface HotelMapProps {
   showLegend?: boolean;
   readOnly?: boolean;
   sosRooms?: number[];
+  sosActive?: boolean;        // when true, always show evacuation route
+  activeAlerts?: any[];       // for responder usage
 }
 
 interface SelectedInfo {
@@ -223,12 +225,15 @@ export default function HotelMap({
   showLegend = true,
   readOnly = false,
   sosRooms = [],
+  sosActive = false,
+  activeAlerts = [],
 }: HotelMapProps) {
   const [activeFloor, setActiveFloor] = useState(defaultFloor);
   const [selected, setSelected] = useState<SelectedInfo | null>(null);
   const activeRole = useAppStore((s) => s.activeRole);
 
   const floor = FLOOR_DATA[activeFloor];
+  const guestRoomNum = useAppStore((s) => s.guestProfile?.roomNumber);
 
   const roomMap = new Map<number, RoomStatus>(rooms.map((r) => [r.room_number, r]));
 
@@ -282,6 +287,145 @@ export default function HotelMap({
       type: area.type,
     });
   }, []);
+
+  // ── A* Pathfinding (tested & verified) ────────────────────────────────────
+  const evacuationsPath = useMemo((): { x: number; y: number; label?: string }[] | null => {
+    // Determine which room to route from
+    let startNum: number | null = null;
+    if (activeRole === 'guest') {
+      // Route only appears after guest presses SOS
+      if (!sosActive) return null;
+      if (guestRoomNum) startNum = Number(guestRoomNum);
+    } else {
+      if (selected?.kind === 'room' && selected.roomData) {
+        startNum = Number(selected.roomData.room_number);
+      }
+    }
+    if (!startNum) return null;
+
+    const leftIdx  = floor.leftNums.indexOf(startNum);
+    const rightIdx = floor.rightNums.indexOf(startNum);
+    if (leftIdx === -1 && rightIdx === -1) return null; // room not on this floor
+
+    // ── Build waypoint graph ──────────────────────────────────────────────────
+    type Node = { id: string; x: number; y: number; neighbors: string[]; label?: string };
+    const nodes: Record<string, Node> = {};
+    const add = (id: string, x: number, y: number, label?: string) => {
+      nodes[id] = { id, x, y, neighbors: [], label };
+    };
+    const link = (a: string, b: string) => {
+      nodes[a].neighbors.push(b);
+      nodes[b].neighbors.push(a);
+    };
+
+    // Room door nodes — at the corridor edge (x=90 left, x=810 right), at room‐center Y
+    for (let i = 0; i < 5; i++) {
+      const y = CONTENT_Y + i * ROOM_STEP + ROOM_H / 2;
+      add(`LD${i}`, CX,   y);          // left  door (corridor edge)
+      add(`RD${i}`, CX2,  y);          // right door (corridor edge)
+    }
+
+    // Left & right vertical corridors — connect doors to top/bottom corners
+    add('LC_TOP', CX,  TOP_H + CORR_H / 2);        // 90, 63
+    add('LC_BOT', CX,  BOT_CORR_Y + CORR_H / 2);   // 90, 459
+    add('RC_TOP', CX2, TOP_H + CORR_H / 2);         // 810, 63
+    add('RC_BOT', CX2, BOT_CORR_Y + CORR_H / 2);   // 810, 459
+
+    link('LC_TOP', 'LD0');
+    for (let i = 0; i < 4; i++) link(`LD${i}`, `LD${i + 1}`);
+    link('LD4', 'LC_BOT');
+
+    link('RC_TOP', 'RD0');
+    for (let i = 0; i < 4; i++) link(`RD${i}`, `RD${i + 1}`);
+    link('RD4', 'RC_BOT');
+
+    // Top & bottom horizontal corridors — connect left corner ↔ exits ↔ right corner
+    const EM_W_HALF = 70 / 2;
+    add('EXA', CX + EM_W_HALF,        TOP_H / 2,               '🟢 Exit A');
+    add('EXB', CX2 - 70 + EM_W_HALF,  TOP_H / 2,               '🟢 Exit B');
+    add('EXC', CX + EM_W_HALF,        BOTTOM_Y + BOTTOM_H / 2, '🟢 Exit C');
+    add('EXD', CX2 - 70 + EM_W_HALF,  BOTTOM_Y + BOTTOM_H / 2, '🟢 Exit D');
+
+    link('LC_TOP', 'EXA');
+    link('EXA',    'EXB');
+    link('EXB',    'RC_TOP');
+    link('LC_BOT', 'EXC');
+    link('EXC',    'EXD');
+    link('EXD',    'RC_BOT');
+
+    // ── Danger penalty setup ──────────────────────────────────────────────────
+    const dangerSet = new Set<string>();
+    dangerZones.forEach(dz => {
+      const rn = Number(dz.roomId);
+      const li = floor.leftNums.indexOf(rn);
+      const ri = floor.rightNums.indexOf(rn);
+      if (li !== -1) dangerSet.add(`LD${li}`);
+      if (ri !== -1) dangerSet.add(`RD${ri}`);
+    });
+
+    // ── A* ────────────────────────────────────────────────────────────────────
+    const startId = leftIdx !== -1 ? `LD${leftIdx}` : `RD${rightIdx}`;
+    const GOALS   = new Set(['EXA', 'EXB', 'EXC', 'EXD']);
+    const DANGER_PENALTY = 5000;
+
+    const open    = new Set([startId]);
+    const cameFrom: Record<string, string> = {};
+    const gScore: Record<string, number>   = {};
+    const fScore: Record<string, number>   = {};
+
+    for (const id of Object.keys(nodes)) { gScore[id] = Infinity; fScore[id] = Infinity; }
+    gScore[startId] = 0;
+
+    const goalNodes = [...GOALS].map(g => nodes[g]).filter(Boolean);
+    const h = (id: string) =>
+      Math.min(...goalNodes.map(g => Math.hypot(nodes[id].x - g.x, nodes[id].y - g.y)));
+
+    fScore[startId] = h(startId);
+
+    while (open.size > 0) {
+      // Pick lowest fScore
+      let current = '';
+      let lowest  = Infinity;
+      for (const id of open) { if (fScore[id] < lowest) { lowest = fScore[id]; current = id; } }
+      if (!current) break;
+
+      if (GOALS.has(current)) {
+        // Reconstruct path — prepend room center as first dot
+        const path: { x: number; y: number; label?: string }[] = [];
+        let c: string | undefined = current;
+        while (c) { path.unshift({ ...nodes[c] }); c = cameFrom[c]; }
+
+        // Prepend actual room center (visual start inside the room)
+        const rmX = leftIdx !== -1 ? LEFT_X + ROOM_W / 2 : RIGHT_X + ROOM_W / 2;
+        const rmY = CONTENT_Y + (leftIdx !== -1 ? leftIdx : rightIdx) * ROOM_STEP + ROOM_H / 2;
+        path.unshift({ x: rmX, y: rmY });
+        return path;
+      }
+
+      open.delete(current);
+
+      for (const nbId of nodes[current].neighbors) {
+        const dist      = Math.hypot(nodes[current].x - nodes[nbId].x, nodes[current].y - nodes[nbId].y);
+        const penalty   = dangerSet.has(nbId) ? DANGER_PENALTY : 0;
+        const tentative = gScore[current] + dist + penalty;
+
+        if (tentative < gScore[nbId]) {
+          cameFrom[nbId] = current;
+          gScore[nbId]   = tentative;
+          fScore[nbId]   = tentative + h(nbId);
+          open.add(nbId);
+        }
+      }
+    }
+    return null;
+  }, [activeFloor, activeRole, dangerZones, floor, selected, guestRoomNum, sosActive]);
+
+  // Build SVG path string from waypoints
+  const evacuPathD = evacuationsPath
+    ? 'M ' + evacuationsPath.map(p => `${Math.round(p.x)},${Math.round(p.y)}`).join(' L ')
+    : '';
+  // Find exit node (last point = destination)
+  const exitNode = evacuationsPath ? evacuationsPath[evacuationsPath.length - 1] : null;
 
   const renderRoom = (num: number, x: number, idx: number) => {
     const y = CONTENT_Y + idx * ROOM_STEP;
@@ -451,45 +595,92 @@ export default function HotelMap({
           {floor.leftNums.map((num, i) => renderRoom(num, LEFT_X, i))}
 
           {/* Render right rooms */}
-          {floor.rightNums.map((num, i) => renderRoom(num, RIGHT_X, i))}
-        </svg>
+          {floor.rightNums.map((num, idx) =>
+            renderRoom(num, RIGHT_X, idx)
+          )}
 
-        {/* Info panel overlay */}
-        {selected && (
-          <div className="absolute bottom-3 left-3 right-3 bg-navy-light/95 backdrop-blur border border-white/20 rounded-xl p-3 flex items-start justify-between gap-3">
-            <div className="flex flex-col gap-1">
-              <span className="text-white font-semibold text-sm">{selected.label}</span>
-              <span
-                className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${
-                  selected.type === 'occupied'
-                    ? 'bg-danger/20 text-red-400'
-                    : selected.type === 'available'
-                    ? 'bg-safe/20 text-green-400'
-                    : 'bg-white/10 text-white/60'
-                }`}
+          {/* ── Evacuation Route Overlay (A*) ─────────────────────────── */}
+          {evacuationsPath && evacuPathD && (
+            <g>
+              {/* Glow shadow */}
+              <path
+                d={evacuPathD}
+                fill="none"
+                stroke="#4ade80"
+                strokeWidth="12"
+                strokeOpacity="0.15"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {/* Primary animated dashed line */}
+              <path
+                d={evacuPathD}
+                fill="none"
+                stroke="#4ade80"
+                strokeWidth="4"
+                strokeDasharray="12,8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                {selected.sublabel}
-              </span>
-              {(activeRole === 'staff' || activeRole === 'responder') && selected.roomData?.guest_name && (
-                <span className="text-white/60 text-xs">
-                  Guest: {selected.roomData.guest_name} · {selected.roomData.language}
-                </span>
+                <animate attributeName="stroke-dashoffset" from="60" to="0" dur="1.2s" repeatCount="indefinite" />
+              </path>
+              {/* Waypoint dots along path */}
+              {evacuationsPath.slice(1, -1).map((pt, i) => (
+                <circle key={i} cx={pt.x} cy={pt.y} r="4" fill="#4ade80" opacity="0.9" />
+              ))}
+              {/* Start dot — room */}
+              <circle cx={evacuationsPath[0].x} cy={evacuationsPath[0].y} r="7" fill="#4ade80">
+                <animate attributeName="r" values="7;11;7" dur="1.4s" repeatCount="indefinite" />
+              </circle>
+              {/* Exit destination star */}
+              {exitNode && (
+                <>
+                  <circle cx={exitNode.x} cy={exitNode.y} r="12" fill="#16a34a" opacity="0.9">
+                    <animate attributeName="r" values="12;17;12" dur="1.2s" repeatCount="indefinite" />
+                  </circle>
+                  <text x={exitNode.x} y={exitNode.y + 1} textAnchor="middle" dominantBaseline="middle" fontSize="12">✓</text>
+                </>
               )}
-              {selected.roomData?.checkin_datetime && (
-                <span className="text-white/40 text-xs">
-                  Checked in: {selected.roomData.checkin_datetime}
-                </span>
-              )}
-            </div>
-            <button
-              onClick={() => setSelected(null)}
-              className="text-white/40 hover:text-white text-lg leading-none flex-shrink-0"
-            >
-              ×
-            </button>
-          </div>
-        )}
+            </g>
+          )}
+        </svg>
       </div>
+
+      {/* Info panel — BELOW the map (never blocks SVG) */}
+      {selected && (
+        <div className="bg-navy-light/80 border border-white/15 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-white font-semibold text-sm">{selected.label}</span>
+            <span
+              className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${
+                selected.type === 'occupied'
+                  ? 'bg-danger/20 text-red-400'
+                  : selected.type === 'available'
+                  ? 'bg-safe/20 text-green-400'
+                  : 'bg-white/10 text-white/60'
+              }`}
+            >
+              {selected.sublabel}
+            </span>
+            {(activeRole === 'staff' || activeRole === 'responder') && selected.roomData?.guest_name && (
+              <span className="text-white/60 text-xs">
+                Guest: {selected.roomData.guest_name} · {selected.roomData.language}
+              </span>
+            )}
+            {selected.roomData?.checkin_datetime && (
+              <span className="text-white/40 text-xs">
+                Checked in: {selected.roomData.checkin_datetime}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => setSelected(null)}
+            className="text-white/40 hover:text-white text-lg leading-none flex-shrink-0"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Legend */}
       {showLegend && (

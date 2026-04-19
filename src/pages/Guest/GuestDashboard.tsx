@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, CheckCircle, Megaphone, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Megaphone, Volume2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Layout from '../../components/Layout/Layout';
 import Navbar from '../../components/Navbar/Navbar';
@@ -11,6 +11,28 @@ import HotelMap from '../../components/HotelMap/HotelMap';
 import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../api/client';
 import type { RoomStatus } from '../../api/client';
+
+// Language name → BCP-47 code for SpeechSynthesis
+const LANG_CODE: Record<string, string> = {
+  English: 'en-US', Hindi: 'hi-IN', Russian: 'ru-RU', Spanish: 'es-ES',
+  French: 'fr-FR', German: 'de-DE', Chinese: 'zh-CN', Japanese: 'ja-JP',
+  Arabic: 'ar-SA', Portuguese: 'pt-BR', Italian: 'it-IT', Korean: 'ko-KR',
+  Dutch: 'nl-NL', Turkish: 'tr-TR', Polish: 'pl-PL',
+};
+
+function speak(text: string, langName: string) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = LANG_CODE[langName] || 'en-US';
+  utt.rate = 0.9;
+  utt.volume = 1;
+  // Try to pick a voice matching the language
+  const voices = window.speechSynthesis.getVoices();
+  const match = voices.find(v => v.lang.startsWith(utt.lang.slice(0, 2)));
+  if (match) utt.voice = match;
+  window.speechSynthesis.speak(utt);
+}
 
 export default function GuestDashboard() {
   const navigate         = useNavigate();
@@ -22,11 +44,34 @@ export default function GuestDashboard() {
   const [countdown,  setCountdown]  = useState(30);
   const [rooms,      setRooms]      = useState<RoomStatus[]>([]);
   const [emergencyCategory, setEmergencyCategory] = useState<string>('Medical Emergency');
+  const [customEmergency,   setCustomEmergency]   = useState<string>('');
+  const spokenIds = useRef<Set<string>>(new Set());  // tracks already-spoken broadcast IDs
 
-  const EMERGENCY_OPTIONS = [
-    'Medical Emergency', 'Fire / Smoke', 'Active Intruder', 'Severe Water Leak',
-    'Gas Smell / Leak', 'Physical Altercation', 'Suspicious Package', 'Structural Issue'
+  // Predefined emergency options with pre-assigned severity levels
+  const EMERGENCY_OPTIONS: { label: string; severity: 1|2|3|4|5 }[] = [
+    { label: 'Medical Emergency',    severity: 4 },
+    { label: 'Fire / Smoke',         severity: 5 },
+    { label: 'Active Intruder',      severity: 5 },
+    { label: 'Severe Water Leak',    severity: 3 },
+    { label: 'Gas Smell / Leak',     severity: 4 },
+    { label: 'Physical Altercation', severity: 4 },
+    { label: 'Suspicious Package',   severity: 3 },
+    { label: 'Structural Issue',     severity: 3 },
+    { label: 'Power Outage',         severity: 2 },
+    { label: 'Elevator Stuck',       severity: 2 },
+    { label: 'Other',                severity: 2 },
   ];
+
+  const SEVERITY_COLORS: Record<number, string> = {
+    1: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    2: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+    3: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+    4: 'bg-red-500/20 text-red-300 border-red-500/30',
+    5: 'bg-red-700/30 text-red-200 border-red-600/50',
+  };
+
+  const selectedOption = EMERGENCY_OPTIONS.find(o => o.label === emergencyCategory) || EMERGENCY_OPTIONS[0];
+  const currentSeverity = selectedOption.severity;
 
   useEffect(() => {
     if (!guestProfile) navigate('/checkin');
@@ -46,6 +91,17 @@ export default function GuestDashboard() {
         m.target === `room${guestProfile?.roomNumber}`
       );
       setApiBroadcasts(relevant);
+
+      // Speak any new broadcast the guest hasn't heard yet
+      relevant.forEach((msg: any) => {
+        const id = msg.id || msg.timestamp + msg.message;
+        if (!spokenIds.current.has(id)) {
+          spokenIds.current.add(id);
+          // Small delay so voices are loaded
+          setTimeout(() => speak(msg.message, guestProfile?.language || 'English'), 500);
+          toast(`📢 ${msg.message}`, { duration: 6000 });
+        }
+      });
     } catch { /* offline */ }
   }, [guestProfile]);
 
@@ -91,14 +147,20 @@ export default function GuestDashboard() {
   const handleSOS = async () => {
     setSosActive(true);
     setShowModal(true);
+    // Use actual message (custom if 'Other' selected)
+    const message = emergencyCategory === 'Other'
+      ? (customEmergency.trim() || 'Emergency — Other')
+      : emergencyCategory;
+    // Use pre-mapped severity (Gemini AI on backend will also override if available)
+    const severity = currentSeverity;
     try {
       await api.createAlert({
         guestName: guestProfile.name,
         roomNumber: guestProfile.roomNumber,
         floor: guestProfile.floor,
-        severity: 5, // Backend AI overrides this based on category now
-        message: emergencyCategory,
-        category: emergencyCategory,
+        severity,
+        message,
+        category: message,
       });
       toast.error('🚨 SOS sent! Staff have been notified.');
     } catch (e) {
@@ -144,15 +206,34 @@ export default function GuestDashboard() {
               <h2 className="font-playfair text-red-400 text-2xl font-bold">Emergency SOS</h2>
 
               {!sosActive && (
-                <div className="w-full max-w-xs mb-2">
-                  <label className="text-white/50 text-xs mb-1 block">What is your emergency?</label>
-                  <select 
+                <div className="w-full max-w-xs mb-2 flex flex-col gap-2">
+                  <label className="text-white/50 text-xs">What is your emergency?</label>
+                  <select
                     value={emergencyCategory}
-                    onChange={(e) => setEmergencyCategory(e.target.value)}
+                    onChange={(e) => { setEmergencyCategory(e.target.value); setCustomEmergency(''); }}
                     className="w-full bg-navy-light text-white p-2.5 rounded-lg border border-white/20 text-sm focus:outline-none focus:border-red-400"
                   >
-                    {EMERGENCY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    {EMERGENCY_OPTIONS.map(o => (
+                      <option key={o.label} value={o.label}>{o.label}</option>
+                    ))}
                   </select>
+
+                  {/* Custom text box for Other */}
+                  {emergencyCategory === 'Other' && (
+                    <input
+                      value={customEmergency}
+                      onChange={(e) => setCustomEmergency(e.target.value)}
+                      placeholder="Describe your emergency…"
+                      className="w-full bg-navy-light text-white p-2.5 rounded-lg border border-red-400/50 text-sm focus:outline-none focus:border-red-400 placeholder:text-white/30"
+                    />
+                  )}
+
+                  {/* Live severity badge */}
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${SEVERITY_COLORS[currentSeverity]}`}>
+                    <span>Risk Level:</span>
+                    <span className="font-bold text-sm">{currentSeverity}/5</span>
+                    <span className="opacity-70">{'▮'.repeat(currentSeverity)}{'▯'.repeat(5 - currentSeverity)}</span>
+                  </div>
                 </div>
               )}
 
@@ -241,18 +322,29 @@ export default function GuestDashboard() {
               defaultFloor={guestProfile.floor}
               showLegend={true}
               readOnly={true}
+              sosActive={sosActive}
             />
-            <div className="mt-3 p-3 bg-white/5 rounded-xl border border-white/10">
-              <p className="text-white/70 text-sm font-medium">
-                Your Exit Route — Room {guestProfile.roomNumber}
+            <div className={`mt-3 p-3 rounded-xl border transition-all duration-500 ${
+              sosActive
+                ? 'bg-red-900/30 border-red-500/60 animate-pulse'
+                : 'bg-white/5 border-white/10'
+            }`}>
+              <p className="text-white/70 text-sm font-medium flex items-center gap-2">
+                <span className={`w-4 h-1 rounded-full flex-shrink-0 ${
+                  sosActive ? 'bg-red-400' : 'bg-green-400 animate-pulse'
+                }`} />
+                {sosActive ? '🚨 Active Evacuation Route — Room ' : 'Live Evacuation Route — Room '}{guestProfile.roomNumber}
               </p>
-              <p className="text-white/50 text-xs mt-1">
-                {guestProfile.roomNumber >= 101 && guestProfile.roomNumber <= 105
-                  ? 'Exit room → Turn right → Use Stairwell A → Ground floor → Emergency Exit A'
-                  : 'Exit room → Turn left → Use Stairwell B → Ground floor → Emergency Exit B'}
+              <p className="text-white/50 text-xs mt-2">
+                Follow the <strong className="text-white">pulsing green dashed line</strong> on the map above. The route is the safest and fastest path to the nearest emergency exit.
               </p>
-              <p className="text-white/30 text-xs mt-1">
-                Route recalculates automatically if danger zones change.
+              {sosActive && (
+                <p className="text-red-300 text-xs font-bold mt-1.5 uppercase tracking-wide">
+                  ⚡ Emergency active — evacuate immediately via the marked route!
+                </p>
+              )}
+              <p className="text-white/30 text-[11px] mt-1">
+                * Route auto-avoids danger zones in real-time.
               </p>
             </div>
           </GlassCard>

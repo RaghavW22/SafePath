@@ -317,7 +317,7 @@ def create_alert():
     severity = 1
     if GEMINI_KEY:
         try:
-            model = genai.GenerativeModel('gemini-pro')
+            model = genai.GenerativeModel('gemini-flash-latest')
             prompt = f"Analyze the following emergency message and return exactly one single number from 1 to 5 (1=low, 5=critical). Do not output any other text or explanation. Message: '{message}'"
             resp = model.generate_content(prompt)
             import re
@@ -380,7 +380,7 @@ def ai_suggest_broadcast():
     target = request.args.get('target', 'all')
     if GEMINI_KEY:
         try:
-            model = genai.GenerativeModel('gemini-pro')
+            model = genai.GenerativeModel('gemini-flash-latest')
             prompt = f"Write a single sentence emergency broadcast announcement to guests in {target}. Keep it extremely concise, professional, and clear."
             resp = model.generate_content(prompt)
             suggestion = resp.text.strip().replace('"', '')
