@@ -22,6 +22,8 @@ const schema = z.object({
   name:       z.string().min(2, 'Name must be at least 2 characters'),
   roomNumber: z.number().min(101, 'Rooms start from 101').max(310, 'Room must be ≤ 310'),
   language:   z.enum(LANGUAGES),
+  email:      z.string().email('Invalid email address'),
+  mobile:     z.string().min(10, 'Mobile number must be at least 10 digits'),
 });
 
 type CheckinFormData = z.infer<typeof schema>;
@@ -70,8 +72,9 @@ export default function CheckinPage() {
         name:       data.name,
         roomNumber: data.roomNumber,
         language:   data.language,
-        email:      '',
-        mobile:     '',
+        email:      data.email,
+        mobile:     data.mobile,
+        guestsCount: 1,
       });
 
       const guest = res.guest;
@@ -123,8 +126,26 @@ export default function CheckinPage() {
               )}
             </motion.div>
 
+            {/* Contact Details Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <motion.div custom={1} variants={FIELD_VARIANTS} initial="hidden" animate="visible">
+                <label className="text-white/50 text-xs mb-1 block">Email Address</label>
+                <input {...register('email')} type="email" placeholder="rahul@example.com" className={INPUT} />
+                {errors.email && (
+                  <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>
+                )}
+              </motion.div>
+              <motion.div custom={1.5} variants={FIELD_VARIANTS} initial="hidden" animate="visible">
+                <label className="text-white/50 text-xs mb-1 block">Mobile Number</label>
+                <input {...register('mobile')} type="tel" placeholder="+91 98765 43210" className={INPUT} />
+                {errors.mobile && (
+                  <p className="text-red-400 text-xs mt-1">{errors.mobile.message}</p>
+                )}
+              </motion.div>
+            </div>
+
             {/* Room Number */}
-            <motion.div custom={1} variants={FIELD_VARIANTS} initial="hidden" animate="visible">
+            <motion.div custom={2} variants={FIELD_VARIANTS} initial="hidden" animate="visible">
               <label className="text-white/50 text-xs mb-1 block">Room Number</label>
               <input
                 {...register('roomNumber', {
@@ -157,7 +178,7 @@ export default function CheckinPage() {
             </motion.div>
 
             {/* Language */}
-            <motion.div custom={2} variants={FIELD_VARIANTS} initial="hidden" animate="visible">
+            <motion.div custom={3} variants={FIELD_VARIANTS} initial="hidden" animate="visible">
               <label className="text-white/50 text-xs mb-1 block">Language Preference</label>
               <select {...register('language')} className={`${INPUT} appearance-none`}>
                 {LANGUAGES.map((lang) => (
