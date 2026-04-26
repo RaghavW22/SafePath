@@ -12,7 +12,7 @@ import Navbar from '../../components/Navbar/Navbar';
 import GlassCard from '../../components/GlassCard/GlassCard';
 import Button from '../../components/Button/Button';
 import SeverityBadge from '../../components/Badge/SeverityBadge';
-import HotelMap from '../../components/HotelMap/HotelMap';
+import SafetyMap from '../../components/HotelMap/SafetyMap';
 import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../api/client';
 import type { RoomStatus, GuestRecord, StatsResponse, RegisterGuestResponse, ApiAlert, ApiBroadcast } from '../../api/client';
@@ -32,15 +32,15 @@ const SEV_BORDER: Record<number, string> = {
   4: 'border-l-red-500', 5: 'border-l-red-900',
 };
 const TARGET_LABELS: Record<string, string> = {
-  all: 'All Guests', floor1: 'Floor 1', floor2: 'Floor 2', floor3: 'Floor 3',
+  all: 'All Residents', floor1: 'Level 1', floor2: 'Level 2', floor3: 'Level 3',
 };
 const BROADCAST_SUGGESTIONS: Record<string, string> = {
-  all: 'Attention all guests: An emergency has been reported. Please follow exit signs and evacuate calmly.',
-  floor1: 'Floor 1 guests: Please evacuate immediately using Stairwell A or B. Avoid corridor near rooms 102–103.',
-  floor2: 'Floor 2 guests: A precautionary evacuation is underway. Proceed calmly to the nearest stairwell.',
-  floor3: 'Floor 3 guests: Please remain in your rooms until further instructions from staff.',
+  all: 'Attention all residents: An emergency has been reported. Please follow exit signs and evacuate calmly.',
+  floor1: 'Level 1 residents: Please evacuate immediately using Shaft A or B. Avoid area near units 102–103.',
+  floor2: 'Level 2 residents: A precautionary evacuation is underway. Proceed calmly to the nearest shaft.',
+  floor3: 'Level 3 residents: Please remain in your units until further instructions from authorities.',
 };
-const INPUT = 'w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-gold transition-colors text-sm';
+const INPUT = 'w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-emerald-400 transition-colors text-sm';
 
 // ─── Register Guest Tab ───────────────────────────────────────────────────────
 function RegisterGuestTab() {
@@ -133,8 +133,8 @@ function RegisterGuestTab() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <UserPlus size={22} className="text-gold" />
-        <h2 className="font-playfair text-white text-2xl font-semibold">Register Guest</h2>
+        <UserPlus size={22} className="text-emerald-400" />
+        <h2 className="font-outfit text-white text-2xl font-semibold">Register Resident</h2>
       </div>
 
       <AnimatePresence mode="wait">
@@ -149,13 +149,13 @@ function RegisterGuestTab() {
           >
             <GlassCard>
               <p className="text-white/50 text-sm mb-5">
-                Fill in guest details. A unique QR code will be generated and sent to the guest's email and mobile.
+                Fill in resident details. A unique digital access token will be generated and shared with the resident.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Name */}
                 <div className="sm:col-span-2">
-                  <label className="text-white/50 text-xs mb-1 block">Guest Full Name *</label>
+                  <label className="text-white/50 text-xs mb-1 block">Full Name *</label>
                   <input
                     value={form.name}
                     onChange={(e) => { setForm((p) => ({ ...p, name: e.target.value })); setErrors((p) => ({ ...p, name: '' })); }}
@@ -167,7 +167,7 @@ function RegisterGuestTab() {
 
                 {/* Room */}
                 <div>
-                  <label className="text-white/50 text-xs mb-1 block">Room Number *</label>
+                  <label className="text-white/50 text-xs mb-1 block">Unit / Zone Number *</label>
                   <input
                     value={form.roomNumber}
                     onChange={(e) => { setForm((p) => ({ ...p, roomNumber: e.target.value })); setErrors((p) => ({ ...p, roomNumber: '' })); }}
@@ -176,8 +176,8 @@ function RegisterGuestTab() {
                     className={INPUT}
                   />
                   {form.roomNumber && (
-                    <p className="text-gold text-xs mt-1">
-                      📍 Floor {Number(form.roomNumber) < 200 ? 1 : Number(form.roomNumber) < 300 ? 2 : 3}
+                    <p className="text-emerald-400 text-xs mt-1">
+                      📍 Level {Number(form.roomNumber) < 200 ? 1 : Number(form.roomNumber) < 300 ? 2 : 3}
                     </p>
                   )}
                   {errors.roomNumber && <p className="text-red-400 text-xs mt-1">{errors.roomNumber}</p>}
@@ -242,17 +242,17 @@ function RegisterGuestTab() {
               </div>
 
               <div className="mt-5">
-                <Button variant="gold" fullWidth onClick={handleRegister} disabled={loading}>
+                <Button variant="gold" fullWidth onClick={handleRegister} disabled={loading} className="bg-emerald-500 hover:bg-emerald-600 border-none">
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
                       <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
                         ⟳
                       </motion.span>
-                      Generating QR Code…
+                      Generating Access…
                     </span>
                   ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <QrCode size={16} /> Register Guest & Generate QR
+                    <span className="flex items-center justify-center gap-2 text-navy font-bold">
+                      <QrCode size={16} /> Register & Generate Access
                     </span>
                   )}
                 </Button>
@@ -327,7 +327,7 @@ function RegisterGuestTab() {
                   <div className="space-y-2.5">
                     {[
                       ['Name', result.guest.guest_name],
-                      ['Room', `Room ${result.guest.room_number} · Floor ${result.guest.floor}`],
+                      ['Unit', `Unit ${result.guest.room_number} · Floor ${result.guest.floor}`],
                       ['Language', result.guest.language],
                       ['Guests', String(form.guestsCount)],
                       ['Email', result.guest.email],
@@ -343,14 +343,14 @@ function RegisterGuestTab() {
                 </GlassCard>
 
                 <GlassCard>
-                  <p className="text-white/40 text-xs uppercase tracking-wider mb-3">Demo Actions</p>
+                  <p className="text-white/40 text-xs uppercase tracking-wider mb-3">Impact Actions</p>
                   <div className="space-y-2">
-                    <Button variant="gold" fullWidth onClick={openGuestView} className="flex items-center justify-center gap-2">
+                    <Button variant="gold" fullWidth onClick={openGuestView} className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 border-none text-navy font-bold">
                       <ExternalLink size={14} />
-                      Open Guest View (Demo)
+                      Open Resident View (Demo)
                     </Button>
                     <Button variant="ghost" fullWidth onClick={resetForm}>
-                      + Register Another Guest
+                      + Register Another Resident
                     </Button>
                   </div>
                 </GlassCard>
@@ -410,11 +410,11 @@ function GuestsTab() {
     <div>
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <Users size={22} className="text-gold" />
-          <h2 className="font-playfair text-white text-2xl font-semibold">Guest Registry</h2>
+          <Users size={22} className="text-emerald-400" />
+          <h2 className="font-outfit text-white text-2xl font-semibold">Community Registry</h2>
           {active.length > 0 && (
             <span className="bg-safe/20 text-green-400 text-xs font-bold px-2.5 py-1 rounded-full">
-              {active.length} checked in
+              {active.length} residents active
             </span>
           )}
         </div>
@@ -443,7 +443,7 @@ function GuestsTab() {
             <table className="w-full text-sm min-w-[720px]">
               <thead>
                 <tr className="bg-navy-light border-b border-white/10">
-                  {['Guest', 'Room', 'Floor', 'Language', 'Email', 'Mobile', 'Check-in Date & Time', 'Action'].map((h) => (
+                  {['Resident', 'Unit', 'Level', 'Language', 'Email', 'Mobile', 'Registration Date', 'Action'].map((h) => (
                     <th key={h} className="py-3 px-4 text-left text-white/50 font-medium">{h}</th>
                   ))}
                 </tr>
@@ -466,14 +466,14 @@ function GuestsTab() {
                               name: g.guest_name,
                               url: `${window.location.origin}/guest-login?token=${g.qr_token}`
                             })}
-                            className="text-gold/60 hover:text-gold transition-colors"
-                            title="View Guest QR"
+                            className="text-emerald-400/60 hover:text-emerald-400 transition-colors"
+                            title="View Resident QR"
                           >
                             <QrCode size={14} />
                           </button>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-gold font-bold">{g.room_number}</td>
+                      <td className="py-3 px-4 text-emerald-400 font-bold">{g.room_number}</td>
                       <td className="py-3 px-4 text-white/60">{g.floor}</td>
                       <td className="py-3 px-4">
                         <span className="bg-white/10 text-white/70 rounded-full text-xs px-2 py-0.5">{g.language}</span>
@@ -484,14 +484,28 @@ function GuestsTab() {
                         <div>{g.checkin_datetime.split('T')[0]}</div>
                         <div className="text-white/40">{g.checkin_datetime.split('T')[1]?.substring(0, 5) ?? ''}</div>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 flex items-center gap-2 justify-center">
                         <button
                           onClick={() => handleCheckout(g.room_number)}
                           disabled={checkingOut === g.room_number}
-                          className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 border border-red-400/30 hover:border-red-400/60 rounded-lg px-3 py-1.5 transition-all mx-auto disabled:opacity-50"
+                          className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 border border-red-400/30 hover:border-red-400/60 rounded-lg px-3 py-1.5 transition-all disabled:opacity-50"
                         >
                           <LogOut size={12} />
                           {checkingOut === g.room_number ? 'Checking out…' : 'Check Out'}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await api.resendEmail(g.room_number);
+                              toast.success(`Email resent to Unit ${g.room_number}`);
+                            } catch (e) {
+                              toast.error('Failed to resend email');
+                            }
+                          }}
+                          className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-400/30 hover:border-emerald-400/60 rounded-lg px-3 py-1.5 transition-all"
+                        >
+                          <Mail size={12} />
+                          Resend
                         </button>
                       </td>
                     </motion.tr>
@@ -507,7 +521,7 @@ function GuestsTab() {
         <>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-white/30 text-xs font-semibold uppercase tracking-wider">Checked Out History</h3>
-            <button 
+            <button
               onClick={async () => {
                 if (window.confirm('Permanently delete all checked-out guest records?')) {
                   try {
@@ -526,7 +540,7 @@ function GuestsTab() {
             <table className="w-full text-sm min-w-[720px]">
               <thead className="bg-white/5">
                 <tr>
-                  {['Guest', 'Room', 'Language', 'Check-in', 'Check-out'].map((h) => (
+                  {['Resident', 'Unit', 'Language', 'Check-in', 'Check-out'].map((h) => (
                     <th key={h} className="py-2.5 px-4 text-left text-white/30 font-medium">{h}</th>
                   ))}
                 </tr>
@@ -535,7 +549,7 @@ function GuestsTab() {
                 {past.map((g) => (
                   <tr key={g.id} className="border-b border-white/5">
                     <td className="py-2.5 px-4 text-white/70">{g.guest_name}</td>
-                    <td className="py-2.5 px-4 text-white/50">Room {g.room_number}</td>
+                    <td className="py-2.5 px-4 text-white/50">Unit {g.room_number}</td>
                     <td className="py-2.5 px-4 text-white/40 text-xs">{g.language}</td>
                     <td className="py-2.5 px-4 text-white/30 text-[11px]">{g.checkin_datetime.replace('T', ' ')}</td>
                     <td className="py-2.5 px-4 text-white/40 text-[11px]">{g.checkout_datetime?.replace('T', ' ') || '—'}</td>
@@ -598,22 +612,22 @@ function OccupancyTab({ stats }: { stats: StatsResponse | null }) {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <BarChart2 size={22} className="text-gold" />
-        <h2 className="font-playfair text-white text-2xl font-semibold">Occupancy Overview</h2>
+        <BarChart2 size={22} className="text-emerald-400" />
+        <h2 className="font-outfit text-white text-2xl font-semibold">Zone Overview</h2>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {stats.byFloor.map((f) => (
           <GlassCard key={f.floor}>
-            <div className="text-gold font-playfair text-4xl font-bold mb-2">Floor {f.floor}</div>
+            <div className="text-emerald-400 font-outfit text-4xl font-bold mb-2">Level {f.floor}</div>
             <div className="grid grid-cols-3 gap-2 text-center mb-3">
-              <div><div className="text-2xl font-bold text-white">{f.total}</div><div className="text-white/40 text-xs">Rooms</div></div>
-              <div><div className="text-2xl font-bold text-red-400">{f.occupied}</div><div className="text-white/40 text-xs">Occupied</div></div>
-              <div><div className="text-2xl font-bold text-green-400">{f.total - f.occupied}</div><div className="text-white/40 text-xs">Free</div></div>
+              <div><div className="text-2xl font-bold text-white">{f.total}</div><div className="text-white/40 text-xs">Units</div></div>
+              <div><div className="text-2xl font-bold text-red-400">{f.occupied}</div><div className="text-white/40 text-xs">Active</div></div>
+              <div><div className="text-2xl font-bold text-green-400">{f.total - f.occupied}</div><div className="text-white/40 text-xs">Empty</div></div>
             </div>
             <div className="bg-white/10 h-2 rounded-full overflow-hidden">
-              <div className="bg-gold h-2 rounded-full transition-all" style={{ width: `${(f.occupied / f.total) * 100}%` }} />
+              <div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${(f.occupied / f.total) * 100}%` }} />
             </div>
-            <div className="text-white/30 text-xs mt-1 text-right">{Math.round((f.occupied / f.total) * 100)}% occupied</div>
+            <div className="text-white/30 text-xs mt-1 text-right">{Math.round((f.occupied / f.total) * 100)}% density</div>
           </GlassCard>
         ))}
       </div>
@@ -853,7 +867,7 @@ export default function StaffDashboard() {
 
         if (newActiveData.length > prevActive) {
           const newest = newActiveData[0];
-          toast.error(`🚨 EMERGENCY: Room ${newest.room_number} - ${newest.guest_name}`, {
+          toast.error(`🚨 EMERGENCY: Unit ${newest.room_number} - ${newest.guest_name}`, {
             duration: 10000,
             style: { background: '#991b1b', color: '#fff' }
           });
@@ -911,8 +925,8 @@ export default function StaffDashboard() {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-3 px-5 py-2.5 text-sm transition-colors ${activeTab === item.id
-                  ? 'border-l-2 border-gold text-gold bg-white/5'
-                  : 'text-white/55 hover:text-white hover:bg-white/5'
+                ? 'border-l-2 border-gold text-gold bg-white/5'
+                : 'text-white/55 hover:text-white hover:bg-white/5'
                 }`}
             >
               {item.icon}
@@ -966,7 +980,7 @@ export default function StaffDashboard() {
                     className={`bg-navy-light rounded-xl p-4 mb-3 border border-white/10 border-l-4 ${SEV_BORDER[alert.severity] || SEV_BORDER[5]}`}
                   >
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className="text-gold font-bold">Room {alert.room_number}</span>
+                      <span className="text-gold font-bold">Unit {alert.room_number}</span>
                       <span className="bg-white/10 text-white/55 text-xs px-2 py-0.5 rounded-full">Floor {alert.floor}</span>
                       <SeverityBadge severity={alert.severity as any} />
                       <span className="text-white/35 text-xs ml-auto">
@@ -987,8 +1001,8 @@ export default function StaffDashboard() {
                             key={v}
                             onClick={() => api.updateAlert(alert.id, { severity: v })}
                             className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold transition-all ${alert.severity === v
-                                ? 'bg-gold text-navy scale-110 shadow-lg'
-                                : 'bg-white/10 text-white/40 hover:bg-white/20'
+                              ? 'bg-gold text-navy scale-110 shadow-lg'
+                              : 'bg-white/10 text-white/40 hover:bg-white/20'
                               }`}
                           >
                             {v}
@@ -1040,20 +1054,22 @@ export default function StaffDashboard() {
           {activeTab === 'map' && (
             <div>
               <div className="flex items-center justify-between mb-5">
-                <h2 className="font-playfair text-white text-2xl font-semibold">Interactive Hotel Map</h2>
-                <Button variant="gold" onClick={() => toast.success('Zones saved. Guest routes recalculating.')}>
-                  Save Zones
-                </Button>
+                <h2 className="font-playfair text-white text-2xl font-semibold">Interactive Community Map</h2>
               </div>
               <GlassCard>
                 <p className="text-white/50 text-sm mb-4">
                   Click a room to target for broadcast. Current Target: <span className="text-gold font-bold">{broadcastTarget === 'all' ? 'All' : broadcastTarget}</span>
                 </p>
-                <HotelMap rooms={rooms} dangerZones={dangerZones} onRoomClick={(r) => {
-                  setBroadcastTarget(`room${r}`);
-                  toast.success(`Target set to Room ${r} for broadcasting.`);
-                  setActiveTab('broadcast');
-                }} showLegend />
+                <SafetyMap 
+                  rooms={rooms} 
+                  dangerZones={dangerZones} 
+                  onRoomClick={(r) => {
+                    setBroadcastTarget(`room${r}`);
+                    toast.success(`Target set to Unit ${r} for broadcasting.`);
+                    setActiveTab('broadcast');
+                  }} 
+                  showLegend 
+                />
               </GlassCard>
             </div>
           )}

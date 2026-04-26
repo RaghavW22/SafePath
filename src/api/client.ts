@@ -212,4 +212,10 @@ export const api = {
 
   deleteStaff: (staff_id: string) =>
     apiFetch<{ success: boolean; message: string }>(`/staff/${encodeURIComponent(staff_id)}`, { method: 'DELETE' }),
+
+  resendEmail: (roomNumber: number) =>
+    apiFetch<{ success: boolean; message: string }>('/resend-email', {
+      method: 'POST',
+      body: JSON.stringify({ roomNumber }),
+    }),
 };

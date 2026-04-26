@@ -98,6 +98,26 @@ const AREA_STYLE: Record<AreaType, { fill: string; stroke: string; color: string
   vending:    { fill: '#1a2a1a', stroke: '#3d5427', color: '#86efac' },
 };
 
+const TYPE_LABELS: Record<string, string> = {
+  exit: 'Emergency Exit',
+  lobby: 'Reception/Admissions',
+  stairwell: 'Emergency Stairs',
+  elevator: 'Medical Lift',
+  restaurant: 'Medical Support',
+  bar: 'Clinical Unit',
+  pool: 'Specialized Care',
+  conference: 'Diagnostic Wing',
+  gym: 'Resource Center',
+  wc: 'Sanitation',
+  kids: 'Pediatric Wing',
+  lounge: 'Recovery Area',
+  spa: 'Acute Care',
+  business: 'Administrative',
+  corridor: 'Hallway',
+  assembly: 'Safe Zone',
+  vending: 'Medical Supplies',
+};
+
 // ─── Room styles ─────────────────────────────────────────────────────────────
 const ROOM_STYLE = {
   available: { fill: '#052e16', stroke: '#16a34a', numColor: '#4ade80', label: 'Available' },
@@ -110,25 +130,25 @@ const ROOM_STYLE = {
 // ─── Shared utility area definitions ─────────────────────────────────────────
 const sharedUtilAreas = (): AreaDef[] => [
   // Left column stairwells
-  { id: 'stair-lt', label: '🪜', sublabel: 'Stair A', type: 'stairwell', x: LEFT_X, y: 0, w: ROOM_W, h: TOP_H },
-  { id: 'stair-lb', label: '🪜', sublabel: 'Stair C', type: 'stairwell', x: LEFT_X, y: BOTTOM_Y, w: ROOM_W, h: BOTTOM_H },
+  { id: 'stair-lt', label: '🪜', sublabel: 'Shaft A', type: 'stairwell', x: LEFT_X, y: 0, w: ROOM_W, h: TOP_H },
+  { id: 'stair-lb', label: '🪜', sublabel: 'Shaft C', type: 'stairwell', x: LEFT_X, y: BOTTOM_Y, w: ROOM_W, h: BOTTOM_H },
   // Right column stairwells
-  { id: 'stair-rt', label: '🪜', sublabel: 'Stair B', type: 'stairwell', x: RIGHT_X, y: 0, w: ROOM_W, h: TOP_H },
-  { id: 'stair-rb', label: '🪜', sublabel: 'Stair D', type: 'stairwell', x: RIGHT_X, y: BOTTOM_Y, w: ROOM_W, h: BOTTOM_H },
+  { id: 'stair-rt', label: '🪜', sublabel: 'Shaft B', type: 'stairwell', x: RIGHT_X, y: 0, w: ROOM_W, h: TOP_H },
+  { id: 'stair-rb', label: '🪜', sublabel: 'Shaft D', type: 'stairwell', x: RIGHT_X, y: BOTTOM_Y, w: ROOM_W, h: BOTTOM_H },
   // Top corridor
   { id: 'top-corr', label: '', sublabel: '', type: 'corridor', x: CX, y: TOP_H, w: CX2 - CX, h: CORR_H },
   // Bottom corridor
   { id: 'bot-corr', label: '', sublabel: '', type: 'corridor', x: CX, y: BOT_CORR_Y, w: CX2 - CX, h: CORR_H },
   // Left utility elevators & WC
-  { id: 'elev-1', label: '🛗', sublabel: 'Elevator 1', type: 'elevator', x: LU_X, y: U_E1_Y, w: LU_W, h: U_E1_H },
-  { id: 'wc-1',   label: '🚻', sublabel: "Men's WC",   type: 'wc',       x: LU_X, y: U_WC1_Y, w: LU_W, h: U_WC_H },
-  { id: 'wc-2',   label: '🚻', sublabel: "Women's WC", type: 'wc',       x: LU_X, y: U_WC2_Y, w: LU_W, h: U_WC_H },
-  { id: 'elev-2', label: '🛗', sublabel: 'Elevator 2', type: 'elevator', x: LU_X, y: U_E2_Y, w: LU_W, h: U_E2_H },
+  { id: 'elev-1', label: '🛗', sublabel: 'Transport 1', type: 'elevator', x: LU_X, y: U_E1_Y, w: LU_W, h: U_E1_H },
+  { id: 'wc-1',   label: '🚻', sublabel: "Sanitation 1",   type: 'wc',       x: LU_X, y: U_WC1_Y, w: LU_W, h: U_WC_H },
+  { id: 'wc-2',   label: '🚻', sublabel: "Sanitation 2", type: 'wc',       x: LU_X, y: U_WC2_Y, w: LU_W, h: U_WC_H },
+  { id: 'elev-2', label: '🛗', sublabel: 'Transport 2', type: 'elevator', x: LU_X, y: U_E2_Y, w: LU_W, h: U_E2_H },
   // Right utility
-  { id: 'elev-3', label: '🛗', sublabel: 'Elevator 3', type: 'elevator', x: RU_X, y: U_E1_Y, w: RU_W, h: U_E1_H },
-  { id: 'wc-3',   label: '🚻', sublabel: "Men's WC",   type: 'wc',       x: RU_X, y: U_WC1_Y, w: RU_W, h: U_WC_H },
-  { id: 'wc-4',   label: '🚻', sublabel: "Women's WC", type: 'wc',       x: RU_X, y: U_WC2_Y, w: RU_W, h: U_WC_H },
-  { id: 'elev-4', label: '🛗', sublabel: 'Elevator 4', type: 'elevator', x: RU_X, y: U_E2_Y, w: RU_W, h: U_E2_H },
+  { id: 'elev-3', label: '🛗', sublabel: 'Transport 3', type: 'elevator', x: RU_X, y: U_E1_Y, w: RU_W, h: U_E1_H },
+  { id: 'wc-3',   label: '🚻', sublabel: "Sanitation 3",   type: 'wc',       x: RU_X, y: U_WC1_Y, w: RU_W, h: U_WC_H },
+  { id: 'wc-4',   label: '🚻', sublabel: "Sanitation 4", type: 'wc',       x: RU_X, y: U_WC2_Y, w: RU_W, h: U_WC_H },
+  { id: 'elev-4', label: '🛗', sublabel: 'Transport 4', type: 'elevator', x: RU_X, y: U_E2_Y, w: RU_W, h: U_E2_H },
 ];
 
 // ─── Floor configurations ─────────────────────────────────────────────────────
@@ -139,20 +159,20 @@ const FLOOR_DATA: Record<number, FloorConfig> = {
     areas: [
       ...sharedUtilAreas(),
       // Top bar (entry)
-      { id: 'ex-a', label: '🚨', sublabel: 'Emergency Exit A', type: 'exit',   x: TB_EX1_X, y: 0, w: EM_W, h: TOP_H },
-      { id: 'lobby', label: '🏨', sublabel: 'Lobby & Reception', type: 'lobby', x: TB_LOBBY_X, y: 0, w: TB_LOBBY_W, h: TOP_H },
-      { id: 'ex-b', label: '🚨', sublabel: 'Emergency Exit B', type: 'exit',   x: TB_EX2_X, y: 0, w: EM_W, h: TOP_H },
+      { id: 'ex-a', label: '🚨', sublabel: 'Exit Alpha', type: 'exit',   x: TB_EX1_X, y: 0, w: EM_W, h: TOP_H },
+      { id: 'lobby', label: '🏥', sublabel: 'Emergency Admissions', type: 'lobby', x: TB_LOBBY_X, y: 0, w: TB_LOBBY_W, h: TOP_H },
+      { id: 'ex-b', label: '🚨', sublabel: 'Exit Beta', type: 'exit',   x: TB_EX2_X, y: 0, w: EM_W, h: TOP_H },
       // Center amenities
-      { id: 'restaurant', label: '🍽️', sublabel: 'Restaurant & Dining', type: 'restaurant', x: ML_X, y: MA_Y1, w: ML_W, h: MA_H1 },
-      { id: 'bar',        label: '🍸', sublabel: 'Bar & Lounge',         type: 'bar',        x: ML_X, y: MA_Y2, w: ML_W, h: MA_H2 },
-      { id: 'pool',       label: '🏊', sublabel: 'Swimming Pool & Spa', type: 'pool',       x: MC_X, y: CA_Y1, w: MC_W, h: CA_H1 },
-      { id: 'conf',       label: '📋', sublabel: 'Grand Conference Hall',type: 'conference', x: MC_X, y: CA_Y2, w: MC_W, h: CA_H2 },
-      { id: 'gym',        label: '💪', sublabel: 'Gym & Fitness Centre', type: 'gym',        x: MR_X, y: MA_Y1, w: MR_W, h: MA_H1 },
-      { id: 'kids',       label: '🎮', sublabel: 'Kids Zone & Play Area', type: 'kids',      x: MR_X, y: MA_Y2, w: MR_W, h: MA_H2 },
+      { id: 'restaurant', label: '💊', sublabel: 'Pharmacy', type: 'restaurant', x: ML_X, y: MA_Y1, w: ML_W, h: MA_H1 },
+      { id: 'bar',        label: '🩸', sublabel: 'Blood Bank',         type: 'bar',        x: ML_X, y: MA_Y2, w: ML_W, h: MA_H2 },
+      { id: 'pool',       label: '🚑', sublabel: 'Triage Center', type: 'pool',       x: MC_X, y: CA_Y1, w: MC_W, h: CA_H1 },
+      { id: 'conf',       label: '🩺', sublabel: 'Diagnostic Lab',type: 'conference', x: MC_X, y: CA_Y2, w: MC_W, h: CA_H2 },
+      { id: 'gym',        label: '📦', sublabel: 'Medical Supplies', type: 'gym',        x: MR_X, y: MA_Y1, w: MR_W, h: MA_H1 },
+      { id: 'kids',       label: '👶', sublabel: 'Pediatrics Ward', type: 'kids',      x: MR_X, y: MA_Y2, w: MR_W, h: MA_H2 },
       // Bottom bar (assembly)
-      { id: 'ex-c',     label: '🚨', sublabel: 'Emergency Exit C', type: 'exit',     x: TB_EX1_X, y: BOTTOM_Y, w: EM_W, h: BOTTOM_H },
-      { id: 'assembly', label: '⛑️', sublabel: 'Fire Assembly Point', type: 'assembly', x: TB_LOBBY_X, y: BOTTOM_Y, w: TB_LOBBY_W, h: BOTTOM_H },
-      { id: 'ex-d',     label: '🚨', sublabel: 'Emergency Exit D', type: 'exit',     x: TB_EX2_X, y: BOTTOM_Y, w: EM_W, h: BOTTOM_H },
+      { id: 'ex-c',     label: '🚨', sublabel: 'Exit Gamma', type: 'exit',     x: TB_EX1_X, y: BOTTOM_Y, w: EM_W, h: BOTTOM_H },
+      { id: 'assembly', label: '⛑️', sublabel: 'Safe Assembly Point', type: 'assembly', x: TB_LOBBY_X, y: BOTTOM_Y, w: TB_LOBBY_W, h: BOTTOM_H },
+      { id: 'ex-d',     label: '🚨', sublabel: 'Exit Delta', type: 'exit',     x: TB_EX2_X, y: BOTTOM_Y, w: EM_W, h: BOTTOM_H },
     ],
   },
   2: {
@@ -160,18 +180,18 @@ const FLOOR_DATA: Record<number, FloorConfig> = {
     rightNums: [206, 207, 208, 209, 210],
     areas: [
       ...sharedUtilAreas(),
-      { id: 'ex-a',    label: '🚨', sublabel: 'Emergency Exit',       type: 'exit',       x: TB_EX1_X,   y: 0,        w: EM_W,        h: TOP_H    },
-      { id: 'eloblby', label: '🛗', sublabel: 'Elevator Lobby',       type: 'lobby',      x: TB_LOBBY_X, y: 0,        w: TB_LOBBY_W,  h: TOP_H    },
-      { id: 'ex-b',    label: '🚨', sublabel: 'Emergency Exit',       type: 'exit',       x: TB_EX2_X,   y: 0,        w: EM_W,        h: TOP_H    },
-      { id: 'meet-a',  label: '📋', sublabel: 'Meeting Room A',       type: 'conference', x: ML_X,       y: MA_Y1,    w: ML_W,        h: MA_H1    },
-      { id: 'meet-b',  label: '📋', sublabel: 'Meeting Room B',       type: 'conference', x: ML_X,       y: MA_Y2,    w: ML_W,        h: MA_H2    },
-      { id: 'skybar',  label: '🌅', sublabel: 'Sky Lounge & Bar',     type: 'lounge',     x: MC_X,       y: CA_Y1,    w: MC_W,        h: CA_H1    },
-      { id: 'minibar', label: '🍹', sublabel: 'Mini-Bar & Café',      type: 'bar',        x: MC_X,       y: CA_Y2,    w: MC_W,        h: CA_H2    },
-      { id: 'biz',     label: '💼', sublabel: 'Business Hub',         type: 'business',   x: MR_X,       y: MA_Y1,    w: MR_W,        h: MA_H1    },
-      { id: 'vend',    label: '🥤', sublabel: 'Vending & Ice Machine', type: 'vending',   x: MR_X,       y: MA_Y2,    w: MR_W,        h: MA_H2    },
-      { id: 'ex-c',   label: '🚨', sublabel: 'Emergency Exit',       type: 'exit',       x: TB_EX1_X,   y: BOTTOM_Y, w: EM_W,        h: BOTTOM_H },
-      { id: 'corr2b', label: '',   sublabel: 'Walkway',              type: 'corridor',   x: TB_LOBBY_X, y: BOTTOM_Y, w: TB_LOBBY_W,  h: BOTTOM_H },
-      { id: 'ex-d',   label: '🚨', sublabel: 'Emergency Exit',       type: 'exit',       x: TB_EX2_X,   y: BOTTOM_Y, w: EM_W,        h: BOTTOM_H },
+      { id: 'ex-a',    label: '🚨', sublabel: 'Exit Alpha',       type: 'exit',       x: TB_EX1_X,   y: 0,        w: EM_W,        h: TOP_H    },
+      { id: 'eloblby', label: '🏥', sublabel: 'Main Hallway',       type: 'lobby',      x: TB_LOBBY_X, y: 0,        w: TB_LOBBY_W,  h: TOP_H    },
+      { id: 'ex-b',    label: '🚨', sublabel: 'Exit Beta',       type: 'exit',       x: TB_EX2_X,   y: 0,        w: EM_W,        h: TOP_H    },
+      { id: 'meet-a',  label: '🩻', sublabel: 'Radiology Lab',       type: 'conference', x: ML_X,       y: MA_Y1,    w: ML_W,        h: MA_H1    },
+      { id: 'meet-b',  label: '🧬', sublabel: 'Pathology Lab',       type: 'conference', x: ML_X,       y: MA_Y2,    w: ML_W,        h: MA_H2    },
+      { id: 'skybar',  label: '🫀', sublabel: 'Cardiology Unit',     type: 'lounge',     x: MC_X,       y: CA_Y1,    w: MC_W,        h: CA_H1    },
+      { id: 'minibar', label: '🍎', sublabel: 'Nutrient Station',      type: 'bar',        x: MC_X,       y: CA_Y2,    w: MC_W,        h: CA_H2    },
+      { id: 'biz',     label: '🥼', sublabel: 'Staff Station',         type: 'business',   x: MR_X,       y: MA_Y1,    w: MR_W,        h: MA_H1    },
+      { id: 'vend',    label: '🥫', sublabel: 'Med Vending', type: 'vending',   x: MR_X,       y: MA_Y2,    w: MR_W,        h: MA_H2    },
+      { id: 'ex-c',   label: '🚨', sublabel: 'Exit Gamma',       type: 'exit',       x: TB_EX1_X,   y: BOTTOM_Y, w: EM_W,        h: BOTTOM_H },
+      { id: 'corr2b', label: '',   sublabel: 'Patient Corridor',     type: 'corridor',   x: TB_LOBBY_X, y: BOTTOM_Y, w: TB_LOBBY_W,  h: BOTTOM_H },
+      { id: 'ex-d',   label: '🚨', sublabel: 'Exit Delta',       type: 'exit',       x: TB_EX2_X,   y: BOTTOM_Y, w: EM_W,        h: BOTTOM_H },
     ],
   },
   3: {
@@ -179,24 +199,24 @@ const FLOOR_DATA: Record<number, FloorConfig> = {
     rightNums: [306, 307, 308, 309, 310],
     areas: [
       ...sharedUtilAreas(),
-      { id: 'ex-a',   label: '🚨', sublabel: 'Emergency Exit',       type: 'exit',      x: TB_EX1_X,   y: 0,        w: EM_W,       h: TOP_H    },
-      { id: 'elobby', label: '🛗', sublabel: 'Elevator Lobby',       type: 'lobby',     x: TB_LOBBY_X, y: 0,        w: TB_LOBBY_W, h: TOP_H    },
-      { id: 'ex-b',   label: '🚨', sublabel: 'Emergency Exit',       type: 'exit',      x: TB_EX2_X,   y: 0,        w: EM_W,       h: TOP_H    },
-      { id: 'spa',    label: '🧖', sublabel: 'Luxury Spa & Wellness', type: 'spa',       x: ML_X,       y: MA_Y1,    w: ML_W,       h: MA_H1    },
-      { id: 'hkp',    label: '🧹', sublabel: 'Housekeeping',         type: 'wc',        x: ML_X,       y: MA_Y2,    w: ML_W,       h: MA_H2    },
-      { id: 'terrace',label: '🌿', sublabel: 'Sky Terrace & Garden', type: 'lounge',    x: MC_X,       y: CA_Y1,    w: MC_W,       h: CA_H1    },
-      { id: 'rtbar',  label: '🌙', sublabel: 'Rooftop Bar',          type: 'bar',       x: MC_X,       y: CA_Y2,    w: MC_W,       h: CA_H2    },
-      { id: 'pgym',   label: '🏋️', sublabel: 'Premium Gym',          type: 'gym',       x: MR_X,       y: MA_Y1,    w: MR_W,       h: MA_H1    },
-      { id: 'laundry',label: '👔', sublabel: 'Laundry Service',      type: 'wc',        x: MR_X,       y: MA_Y2,    w: MR_W,       h: MA_H2    },
-      { id: 'ex-c',   label: '🚨', sublabel: 'Emergency Exit',       type: 'exit',      x: TB_EX1_X,   y: BOTTOM_Y, w: EM_W,       h: BOTTOM_H },
-      { id: 'corr3b', label: '',   sublabel: 'Service Corridor',     type: 'corridor',  x: TB_LOBBY_X, y: BOTTOM_Y, w: TB_LOBBY_W, h: BOTTOM_H },
-      { id: 'ex-d',   label: '🚨', sublabel: 'Emergency Exit',       type: 'exit',      x: TB_EX2_X,   y: BOTTOM_Y, w: EM_W,       h: BOTTOM_H },
+      { id: 'ex-a',   label: '🚨', sublabel: 'Exit Alpha',       type: 'exit',      x: TB_EX1_X,   y: 0,        w: EM_W,       h: TOP_H    },
+      { id: 'elobby', label: '🏥', sublabel: 'ICU Intake',       type: 'lobby',     x: TB_LOBBY_X, y: 0,        w: TB_LOBBY_W, h: TOP_H    },
+      { id: 'ex-b',   label: '🚨', sublabel: 'Exit Beta',       type: 'exit',      x: TB_EX2_X,   y: 0,        w: EM_W,       h: TOP_H    },
+      { id: 'spa',    label: '🩹', sublabel: 'Acute Recovery', type: 'spa',       x: ML_X,       y: MA_Y1,    w: ML_W,       h: MA_H1    },
+      { id: 'hkp',    label: '🧹', sublabel: 'Sterilization',         type: 'wc',        x: ML_X,       y: MA_Y2,    w: ML_W,       h: MA_H2    },
+      { id: 'terrace',label: '⛺', sublabel: 'Isolation Ward', type: 'lounge',    x: MC_X,       y: CA_Y1,    w: MC_W,       h: CA_H1    },
+      { id: 'rtbar',  label: '📡', sublabel: 'Command Center',          type: 'bar',       x: MC_X,       y: CA_Y2,    w: MC_W,       h: CA_H2    },
+      { id: 'pgym',   label: '📦', sublabel: 'Bulk Storage',          type: 'gym',       x: MR_X,       y: MA_Y1,    w: MR_W,       h: MA_H1    },
+      { id: 'laundry',label: '🧼', sublabel: 'Decontamination',      type: 'wc',        x: MR_X,       y: MA_Y2,    w: MR_W,       h: MA_H2    },
+      { id: 'ex-c',   label: '🚨', sublabel: 'Exit Gamma',       type: 'exit',      x: TB_EX1_X,   y: BOTTOM_Y, w: EM_W,       h: BOTTOM_H },
+      { id: 'corr3b', label: '',   sublabel: 'Service Bay',     type: 'corridor',  x: TB_LOBBY_X, y: BOTTOM_Y, w: TB_LOBBY_W, h: BOTTOM_H },
+      { id: 'ex-d',   label: '🚨', sublabel: 'Exit Delta',       type: 'exit',      x: TB_EX2_X,   y: BOTTOM_Y, w: EM_W,       h: BOTTOM_H },
     ],
   },
 };
 
 // ─── Component props ──────────────────────────────────────────────────────────
-interface HotelMapProps {
+interface SafetyMapProps {
   rooms?: RoomStatus[];
   dangerZones?: DangerZone[];
   defaultFloor?: number;
@@ -217,7 +237,7 @@ interface SelectedInfo {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function HotelMap({
+export default function SafetyMap({
   rooms = [],
   dangerZones = [],
   defaultFloor = 1,
@@ -227,7 +247,7 @@ export default function HotelMap({
   sosRooms = [],
   sosActive = false,
   activeAlerts = [],
-}: HotelMapProps) {
+}: SafetyMapProps) {
   const [activeFloor, setActiveFloor] = useState(defaultFloor);
   const [selected, setSelected] = useState<SelectedInfo | null>(null);
   const activeRole = useAppStore((s) => s.activeRole);
@@ -276,7 +296,7 @@ export default function HotelMap({
 
       setSelected({
         kind: 'room',
-        label: `Room ${roomNum}`,
+        label: `Unit ${roomNum}`,
         sublabel: statusLabel,
         type: rd?.status ?? 'unknown',
         roomData: rd,
@@ -290,7 +310,7 @@ export default function HotelMap({
     setSelected({
       kind: 'area',
       label: area.sublabel ?? area.id,
-      sublabel: area.type.charAt(0).toUpperCase() + area.type.slice(1),
+      sublabel: TYPE_LABELS[area.type] || area.type,
       type: area.type,
     });
   }, []);
@@ -560,7 +580,7 @@ export default function HotelMap({
                   : 'bg-white/10 text-white/60 hover:bg-white/20'
               }`}
             >
-              Floor {f}
+              Level {f}
               <span
                 className={`text-xs rounded-full px-1.5 py-0.5 ${
                   activeFloor === f ? 'bg-navy/30' : 'bg-white/10'
@@ -592,7 +612,7 @@ export default function HotelMap({
             fontSize="11"
             fontFamily="Inter, sans-serif"
           >
-            Floor {activeFloor} — Interactive Hotel Map
+            Level {activeFloor} — Interactive Hospital Safety Map
           </text>
 
           {/* Render areas */}
@@ -671,7 +691,7 @@ export default function HotelMap({
             </span>
             {(activeRole === 'staff' || activeRole === 'responder') && selected.roomData?.guest_name && (
               <span className="text-white/60 text-xs">
-                Guest: {selected.roomData.guest_name} · {selected.roomData.language}
+                Resident: {selected.roomData.guest_name} · {selected.roomData.language}
               </span>
             )}
             {selected.roomData?.checkin_datetime && (
@@ -710,7 +730,7 @@ export default function HotelMap({
           </span>
           <span className="flex items-center gap-1.5 text-blue-400">
             <span className="w-3 h-3 rounded bg-[#082f49] border border-blue-600 inline-block" />
-            Amenity
+            Medical Area
           </span>
         </div>
       )}

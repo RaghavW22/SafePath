@@ -27,8 +27,8 @@ h1, h2, h3 {
   font-family: var(--font-playfair);
 }
 
-.hotel-bg {
-  background-image: url('/hotel-bg.jpg');
+.facility-bg {
+  background-image: url('/facility-bg.jpg');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;

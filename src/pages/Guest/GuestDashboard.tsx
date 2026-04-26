@@ -7,7 +7,7 @@ import Layout from '../../components/Layout/Layout';
 import Navbar from '../../components/Navbar/Navbar';
 import GlassCard from '../../components/GlassCard/GlassCard';
 import Button from '../../components/Button/Button';
-import HotelMap from '../../components/HotelMap/HotelMap';
+import SafetyMap from '../../components/HotelMap/SafetyMap';
 import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../api/client';
 import type { RoomStatus } from '../../api/client';
@@ -224,10 +224,10 @@ export default function GuestDashboard() {
     const myRoom = rooms.find((r) => r.room_number === guestProfile.roomNumber);
     if (!myRoom) return;
 
-    // If the room became available, or occupied by a different guest
+    // If the unit became available, or occupied by a different resident
     if (myRoom.status === 'available' || (myRoom.guest_name && myRoom.guest_name !== guestProfile.name)) {
       useAppStore.getState().logout();
-      toast('You have been checked out. Thank you for staying with us!', { icon: '👋' });
+      toast('You have been logged out. Safety first!', { icon: '👋' });
       navigate('/');
     }
   }, [rooms, guestProfile, navigate]);
@@ -237,9 +237,9 @@ export default function GuestDashboard() {
       <Layout showBackground={true}>
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-            <Loader2 size={40} className="text-gold" />
+            <Loader2 size={40} className="text-emerald-400" />
           </motion.div>
-          <p className="text-white/60 font-playfair animate-pulse text-lg">Redirecting to login…</p>
+          <p className="text-white/60 font-outfit animate-pulse text-lg">Redirecting to login…</p>
         </div>
       </Layout>
     );
@@ -270,7 +270,7 @@ export default function GuestDashboard() {
   };
 
   const targetLabels: Record<string, string> = {
-    all: 'All Guests', floor1: 'Floor 1', floor2: 'Floor 2', floor3: 'Floor 3',
+    all: 'All Residents', floor1: 'Level 1', floor2: 'Level 2', floor3: 'Level 3',
   };
 
   return (
@@ -282,13 +282,13 @@ export default function GuestDashboard() {
         {/* ── LEFT COLUMN ── */}
         <div className="flex flex-col gap-6">
 
-          {/* Guest Info */}
+          {/* Resident Info */}
           <GlassCard>
-            <h1 className="font-playfair text-gold text-4xl font-bold">
-              Room {guestProfile.roomNumber}
+            <h1 className="font-outfit text-emerald-400 text-4xl font-bold">
+              Unit {guestProfile.roomNumber}
             </h1>
             <p className="text-white/70 mt-1">
-              {guestProfile.name} · Floor {guestProfile.floor}
+              {guestProfile.name} · Level {guestProfile.floor}
             </p>
             <div className="flex items-center gap-2 mt-2">
               <CheckCircle size={16} className="text-safe" />
@@ -304,7 +304,7 @@ export default function GuestDashboard() {
           {/* SOS Panic Button */}
           <GlassCard>
             <div className="flex flex-col items-center gap-5">
-              <h2 className="font-playfair text-red-400 text-2xl font-bold">Emergency SOS</h2>
+              <h2 className="font-outfit text-red-400 text-2xl font-bold uppercase tracking-tighter">Emergency SOS</h2>
 
               {!sosActive && (
                 <div className="w-full max-w-xs mb-2 flex flex-col gap-2">
@@ -378,8 +378,8 @@ export default function GuestDashboard() {
           {/* Announcements */}
           <GlassCard>
             <div className="flex items-center gap-2 mb-3">
-              <Megaphone size={18} className="text-gold" />
-              <h2 className="font-playfair text-white text-lg font-semibold">Staff Announcements</h2>
+              <Megaphone size={18} className="text-emerald-400" />
+              <h2 className="font-outfit text-white text-lg font-semibold">Community Alerts</h2>
             </div>
             <div className="flex flex-col gap-2 max-h-52 overflow-y-auto custom-scroll">
               <AnimatePresence>
@@ -396,8 +396,8 @@ export default function GuestDashboard() {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-white/40 text-xs">{msg.timestamp.split('T')[1] ?? msg.timestamp}</span>
-                        <span className="bg-gold/20 text-gold text-xs rounded-full px-2 py-0.5">
-                          {msg.target.startsWith('room') ? 'Room Targeted' : targetLabels[msg.target] || 'General'}
+                        <span className="bg-emerald-500/20 text-emerald-400 text-xs rounded-full px-2 py-0.5 font-bold">
+                          {msg.target.startsWith('room') ? 'Priority Alert' : targetLabels[msg.target] || 'General'}
                         </span>
                       </div>
                       <p className="text-white/80 text-sm">{msg.message}</p>
@@ -412,10 +412,10 @@ export default function GuestDashboard() {
         {/* ── RIGHT COLUMN ── */}
         <div className="flex flex-col gap-6">
           <GlassCard>
-            <h2 className="font-playfair text-white text-xl font-semibold mb-4">
-              🏨 Hotel Floor Map
+            <h2 className="font-outfit text-white text-xl font-semibold mb-4">
+              🛡️ Community Safety Map
             </h2>
-            <HotelMap
+            <SafetyMap
               rooms={rooms}
               dangerZones={dangerZones}
               defaultFloor={guestProfile.floor}
@@ -428,9 +428,9 @@ export default function GuestDashboard() {
                 : 'bg-white/5 border-white/10'
               }`}>
               <p className="text-white/70 text-sm font-medium flex items-center gap-2">
-                <span className={`w-4 h-1 rounded-full flex-shrink-0 ${sosActive ? 'bg-red-400' : 'bg-green-400 animate-pulse'
+                <span className={`w-4 h-1 rounded-full flex-shrink-0 ${sosActive ? 'bg-red-400' : 'bg-emerald-400 animate-pulse'
                   }`} />
-                {sosActive ? '🚨 Active Evacuation Route — Room ' : 'Live Evacuation Route — Room '}{guestProfile.roomNumber}
+                {sosActive ? '🚨 Active Evacuation Route — Unit ' : 'Live Evacuation Route — Unit '}{guestProfile.roomNumber}
               </p>
               <p className="text-white/50 text-xs mt-2">
                 Follow the <strong className="text-white">pulsing green dashed line</strong> on the map above. The route is the safest and fastest path to the nearest emergency exit.
@@ -470,11 +470,11 @@ export default function GuestDashboard() {
                   <X size={18} />
                 </button>
                 <AlertTriangle size={48} className="text-red-400 mx-auto mb-3" />
-                <h2 className="font-playfair text-white text-2xl font-bold mb-2">
-                  SOS Sent — Room {guestProfile.roomNumber}
+                <h2 className="font-outfit text-white text-2xl font-bold mb-2">
+                  SOS Sent — Unit {guestProfile.roomNumber}
                 </h2>
                 <p className="text-white/60 text-sm mb-4">
-                  Staff have been notified. Stay calm and follow your exit map below.
+                  Emergency coordinators have been notified. Stay calm and follow your safety map.
                 </p>
                 <div className="text-4xl font-bold text-danger mb-2">{countdown}</div>
                 <p className="text-white/30 text-xs">This dialog closes automatically</p>

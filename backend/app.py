@@ -25,6 +25,8 @@ if GEMINI_KEY:
 app = Flask(__name__)
 CORS(app)
 
+from email_templates import EMAIL_TEMPLATE
+
 # Legacy database handlers removed to ensure cloud-only storage
 
 def init_db():
@@ -168,8 +170,8 @@ def checkout():
     try:
         # Find the active checkin for this room
         query = db_firestore.collection('checkins')\
-            .where('room_number', '==', room_number)\
-            .where('status', '==', 'active')\
+            .where(filter=firestore.FieldFilter('room_number', '==', room_number))\
+            .where(filter=firestore.FieldFilter('status', '==', 'active'))\
             .limit(1).stream()
         
         checkin_id = None
@@ -205,30 +207,25 @@ def get_guests():
     status_filter = request.args.get('status', 'active')
     if not db_firestore: return jsonify([])
     try:
-        query = db_firestore.collection('checkins')
-        if status_filter != 'all':
-            query = query.where('status', '==', status_filter)
+        # Instead of a compound query that requires an index,
+        # we order by checkin_datetime here, then filter in python.
+        query = db_firestore.collection('checkins').order_by('checkin_datetime', direction=firestore.Query.DESCENDING)
+        docs = query.stream()
+        results = [doc.to_dict() for doc in docs]
         
-        # Order by checkin time descending
-        docs = query.order_by('checkin_datetime', direction=firestore.Query.DESCENDING).stream()
-        return jsonify([doc.to_dict() for doc in docs])
+        if status_filter != 'all':
+            results = [r for r in results if r.get('status') == status_filter]
+            
+        return jsonify(results)
     except Exception as e:
         print(f"Error fetching guests: {e}")
-        # If index is missing, fall back to un-ordered stream
-        try:
-            docs = db_firestore.collection('checkins').stream()
-            results = [doc.to_dict() for doc in docs]
-            if status_filter != 'all':
-                results = [r for r in results if r.get('status') == status_filter]
-            return jsonify(results)
-        except:
-            return jsonify([])
+        return jsonify([])
 
 @app.route('/api/guests/history', methods=['DELETE'])
 def clear_guest_history():
     if not db_firestore: return jsonify({'error': 'Cloud offline'}), 503
     try:
-        docs = db_firestore.collection('checkins').where('status', '==', 'checked_out').stream()
+        docs = db_firestore.collection('checkins').where(filter=firestore.FieldFilter('status', '==', 'checked_out')).stream()
         count = 0
         for doc in docs:
             doc.reference.delete()
@@ -325,7 +322,7 @@ def create_alert():
 def clear_resolved_alerts():
     if not db_firestore: return jsonify({'error': 'Cloud offline'}), 503
     try:
-        docs = db_firestore.collection('alerts').where('status', '==', 'acknowledged').stream()
+        docs = db_firestore.collection('alerts').where(filter=firestore.FieldFilter('status', '==', 'acknowledged')).stream()
         count = 0
         for doc in docs:
             doc.reference.delete()
@@ -359,8 +356,8 @@ def resolve_alerts_by_room():
     
     try:
         query = db_firestore.collection('alerts')\
-            .where('room_number', '==', room_number)\
-            .where('status', '==', 'active')
+            .where(filter=firestore.FieldFilter('room_number', '==', room_number))\
+            .where(filter=firestore.FieldFilter('status', '==', 'active'))
         docs = query.stream()
         for doc in docs:
             doc.reference.update({'status': 'acknowledged'})
@@ -521,6 +518,40 @@ def delete_staff(staff_id):
     db_firestore.collection('staff').document(staff_id).delete()
     return jsonify({'success': True})
 
+@app.route('/api/resend-email', methods=['POST'])
+def resend_email():
+    data = request.get_json(force=True)
+    room_number = int(data.get('roomNumber', 0))
+    
+    if not db_firestore: return jsonify({'error': 'Cloud offline'}), 503
+    
+    try:
+        # Find active checkin
+        query = db_firestore.collection('checkins')\
+            .where(filter=firestore.FieldFilter('room_number', '==', room_number))\
+            .where(filter=firestore.FieldFilter('status', '==', 'active'))\
+            .limit(1).stream()
+        
+        guest = None
+        for doc in query:
+            guest = doc.to_dict()
+            
+        if not guest:
+            return jsonify({'error': 'No active resident found for this unit'}), 404
+            
+        base_url = request.headers.get('Origin', 'http://localhost:5173')
+        send_checkin_notifications(
+            guest['guest_name'], 
+            guest['room_number'], 
+            base_url, 
+            guest['qr_token'], 
+            guest['email'], 
+            guest.get('mobile', '')
+        )
+        return jsonify({'success': True, 'message': 'Email resent successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -538,45 +569,25 @@ def send_checkin_notifications(guest_name, room, base_url, token, email, mobile)
         msg = MIMEMultipart('related')
         msg['From'] = my_email
         msg['To'] = email
-        msg['Subject'] = f"Welcome to SafePath Hospitality - Room {room}"
+        msg['Subject'] = f"Secure Access: SafePath Hospital Safety Guide - Unit {room}"
 
-        html_body = f"""
-        <html><body style="font-family:Arial,sans-serif;background:#0a0e1a;color:#fff;padding:0;margin:0;">
-          <div style="max-width:600px;margin:auto;background:#101827;border-radius:16px;overflow:hidden;">
-            <img src="cid:hotel_banner" alt="Azure Oasis Hotel" style="width:100%;height:220px;object-fit:cover;">
-            <div style="padding:32px;">
-              <h1 style="color:#d4a843;font-size:28px;margin:0 0 8px;">Welcome, {guest_name}!</h1>
-              <p style="color:#a0aec0;font-size:16px;margin:0 0 24px;">
-                You are now checked in to <b style="color:#fff;">Room {room}</b>.<br>
-                Your personalised emergency exit guide is ready below.
-              </p>
-              <div style="text-align:center;background:#1c2a40;border-radius:12px;padding:24px;margin:20px 0;">
-                <p style="color:#e2e8f0;margin:0 0 16px;">Scan this QR code to access your live safety dashboard:</p>
-                <img src="cid:qr_code" alt="QR Code" style="width:200px;height:200px;border-radius:8px;">
-                <p style="color:#718096;font-size:12px;margin:12px 0 0;">
-                  Or visit: <a href="{login_url}" style="color:#d4a843;">{login_url}</a>
-                </p>
-              </div>
-              <p style="color:#718096;font-size:13px;border-top:1px solid #2d3748;padding-top:16px;margin-top:24px;">
-                In an emergency, always follow staff instructions.<br>
-                <b style="color:#d4a843;">SafePath AI</b> - Intelligent Emergency Management
-              </p>
-            </div>
-          </div>
-        </body></html>
-        """
+        html_body = EMAIL_TEMPLATE.format(
+            guest_name=guest_name,
+            room=room,
+            login_url=login_url
+        )
         msg.attach(MIMEText(html_body, 'html'))
 
-        # Attach hotel banner
-        hotel_img_path = os.path.join(os.path.dirname(__file__), '..', 'public', 'hotel-bg.jpg')
+        # Attach facility banner
+        facility_img_path = os.path.join(os.path.dirname(__file__), '..', 'public', 'facility-bg.jpg')
         try:
-            with open(hotel_img_path, 'rb') as f:
-                hotel_img = MIMEImage(f.read(), _subtype='jpeg')
-                hotel_img.add_header('Content-ID', '<hotel_banner>')
-                hotel_img.add_header('Content-Disposition', 'inline', filename='hotel.jpg')
-                msg.attach(hotel_img)
+            with open(facility_img_path, 'rb') as f:
+                facility_img = MIMEImage(f.read(), _subtype='jpeg')
+                facility_img.add_header('Content-ID', '<facility_banner>')
+                facility_img.add_header('Content-Disposition', 'inline', filename='facility.jpg')
+                msg.attach(facility_img)
         except Exception as e:
-            print(f"Warning: Could not attach hotel image: {e}")
+            print(f"Warning: Could not attach facility image: {e}")
 
         # Generate and attach QR code
         try:
@@ -601,14 +612,14 @@ def send_checkin_notifications(guest_name, room, base_url, token, email, mobile)
             server.login(my_email, my_app_password)
             server.send_message(msg)
             server.quit()
-            print(f"[OK] Email with hotel image + QR sent to: {email}", flush=True)
+            print(f"[OK] Email with facility image + QR sent to: {email}", flush=True)
         except Exception as e:
             print(f"[ERROR] Failed to send email: {e}", flush=True)
 
     if email:
         threading.Thread(target=send_real_email, daemon=True).start()
 
-    print(f"[NOTIFICATION] Check-in processed for {guest_name} (Room {room}). SMS feature disabled by request.", flush=True)
+    print(f"[NOTIFICATION] Check-in processed for {guest_name} (Unit {room}). SMS feature disabled by request.", flush=True)
     print("=" * 50, flush=True)
 
 

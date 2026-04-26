@@ -78,7 +78,7 @@ function RealQRScanner({ onScan }: { onScan: (text: string) => void }) {
           min-height: 200px;
         }
         #qr-reader__dashboard_section_csr button {
-          background: linear-gradient(135deg, #D4AF37 0%, #AA8A2A 100%);
+          background: linear-gradient(135deg, #10B981 0%, #059669 100%);
           color: #0A1628;
           border: none;
           padding: 10px 24px;
@@ -88,11 +88,11 @@ function RealQRScanner({ onScan }: { onScan: (text: string) => void }) {
           font-size: 14px;
           margin-top: 16px;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+          box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
         }
         #qr-reader__dashboard_section_csr button:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+          box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
         }
         #qr-reader__dashboard_section_swaplink {
           text-decoration: none;
@@ -112,10 +112,10 @@ function RealQRScanner({ onScan }: { onScan: (text: string) => void }) {
         }
         #qr-reader__dashboard_section_swaplink:hover {
           background: rgba(255, 255, 255, 0.15);
-          border-color: #D4AF37;
-          color: #D4AF37;
+          border-color: #10B981;
+          color: #10B981;
         }
-        #qr-reader a { color: #D4AF37; }
+        #qr-reader a { color: #10B981; }
         #qr-reader span {
           color: rgba(255, 255, 255, 0.7);
           font-size: 13px;
@@ -192,11 +192,11 @@ export default function QRLoginPage() {
 
       setGuestName(guest.guest_name);
       setMode('success');
-      toast.success(`Welcome, ${guest.guest_name}! Room ${guest.room_number} ready.`);
+      toast.success(`Welcome, ${guest.guest_name}! Unit ${guest.room_number} ready.`);
 
       setTimeout(() => navigate('/guest-dashboard'), 1800);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Invalid QR code';
+      const msg = err instanceof Error ? err.message : 'Invalid Token';
       setErrorMsg(msg);
       setMode('error');
     }
@@ -208,7 +208,7 @@ export default function QRLoginPage() {
     <Layout showBackground={true}>
       {/* Logo */}
       <div className="flex items-center justify-center pt-8 pb-2">
-        <span className="font-playfair text-gold text-2xl font-bold">SafePath</span>
+        <span className="font-outfit text-white text-2xl font-bold">Safe<span className="text-emerald-400">Path</span></span>
       </div>
 
       <div className="flex-1 flex items-center justify-center px-4 py-6">
@@ -226,11 +226,11 @@ export default function QRLoginPage() {
                 className="flex flex-col items-center gap-6"
               >
                 <div className="text-center">
-                  <h1 className="font-playfair text-white text-2xl font-bold mb-1">
-                    Guest Login
+                  <h1 className="font-outfit text-white text-2xl font-bold mb-1">
+                    Resident Access
                   </h1>
                   <p className="text-white/50 text-sm">
-                    Scan the QR code provided by hotel staff
+                    Scan the token provided by community leads
                   </p>
                 </div>
 
@@ -238,8 +238,8 @@ export default function QRLoginPage() {
 
                 <div className="w-full space-y-3">
                   <p className="text-white/30 text-xs text-center">
-                    Open your camera app and point it at the QR code —<br />
-                    this page will open automatically
+                    Use your access token to enter the safety hub.<br />
+                    Stay connected, stay safe.
                   </p>
 
                   <div className="flex items-center gap-3">
@@ -271,28 +271,28 @@ export default function QRLoginPage() {
                 className="flex flex-col gap-5"
               >
                 <div>
-                  <h1 className="font-playfair text-white text-2xl font-bold mb-1">
-                    Enter Your Code
+                  <h1 className="font-outfit text-white text-2xl font-bold mb-1">
+                    Enter Access Token
                   </h1>
                   <p className="text-white/50 text-sm">
-                    Paste the token from your welcome message
+                    Paste the token provided by coordinators
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-white/50 text-xs">Guest Token</label>
+                  <label className="text-white/50 text-xs">Resident Token</label>
                   <input
                     ref={inputRef}
                     value={manualToken}
                     onChange={(e) => setManualToken(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
                     placeholder="Paste your token here…"
-                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm font-mono placeholder:text-white/30 focus:outline-none focus:border-gold transition-colors"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm font-mono placeholder:text-white/30 focus:outline-none focus:border-emerald-400 transition-colors"
                   />
                 </div>
 
-                <Button variant="gold" fullWidth onClick={handleManualSubmit} disabled={!manualToken.trim()}>
-                  Verify & Login
+                <Button variant="gold" fullWidth onClick={handleManualSubmit} disabled={!manualToken.trim()} className="bg-emerald-500 hover:bg-emerald-600 border-none text-navy font-bold">
+                  Verify & Access
                 </Button>
 
                 <button
@@ -317,11 +317,11 @@ export default function QRLoginPage() {
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 >
-                  <Loader2 size={48} className="text-gold" />
+                  <Loader2 size={48} className="text-emerald-400" />
                 </motion.div>
                 <div className="text-center">
-                  <p className="text-white font-semibold">Verifying your QR code…</p>
-                  <p className="text-white/40 text-sm mt-1">Checking with hotel system</p>
+                  <p className="text-white font-semibold">Verifying your token…</p>
+                  <p className="text-white/40 text-sm mt-1">Synchronizing with safety hub</p>
                 </div>
               </motion.div>
             )}
@@ -344,20 +344,20 @@ export default function QRLoginPage() {
                   <ShieldCheck size={40} className="text-green-400" />
                 </motion.div>
                 <div className="text-center">
-                  <h2 className="font-playfair text-white text-2xl font-bold">
+                  <h2 className="font-outfit text-white text-2xl font-bold">
                     Welcome, {guestName}!
                   </h2>
                   <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 flex flex-col items-center gap-0.5">
-                    <span className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Your SafePath Access ID</span>
-                    <span className="text-gold text-xs font-mono select-all">{urlToken || manualToken}</span>
+                    <span className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Your SafePath Impact ID</span>
+                    <span className="text-emerald-400 text-xs font-mono select-all">{urlToken || manualToken}</span>
                   </div>
                   <p className="text-white/50 text-sm mt-1">
-                    Taking you to your dashboard…
+                    Launching your safety ecosystem…
                   </p>
                 </div>
                 <div className="w-32 h-1 bg-white/10 rounded-full overflow-hidden">
                   <motion.div
-                    className="h-1 bg-gold rounded-full"
+                    className="h-1 bg-emerald-400 rounded-full"
                     initial={{ width: '0%' }}
                     animate={{ width: '100%' }}
                     transition={{ duration: 1.8 }}
@@ -379,12 +379,12 @@ export default function QRLoginPage() {
                   <AlertCircle size={40} className="text-red-400" />
                 </div>
                 <div className="text-center">
-                  <h2 className="font-playfair text-white text-xl font-bold">QR Code Invalid</h2>
+                  <h2 className="font-outfit text-white text-xl font-bold">Token Invalid</h2>
                   <p className="text-red-300 text-sm mt-2 max-w-xs">{errorMsg}</p>
                 </div>
                 <div className="flex flex-col gap-2 w-full">
-                  <Button variant="gold" fullWidth onClick={() => { setMode('manual'); setManualToken(''); }}>
-                    Try Another Code
+                  <Button variant="gold" fullWidth onClick={() => { setMode('manual'); setManualToken(''); }} className="bg-emerald-500 hover:bg-emerald-600 border-none text-navy font-bold">
+                    Try Another Token
                   </Button>
                   <Button variant="ghost" fullWidth onClick={() => setMode('scanning')}>
                     Back to Scan

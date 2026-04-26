@@ -12,7 +12,7 @@ export default function Layout({ children, showBackground = true, className }: L
     <div
       className={clsx(
         'min-h-screen relative',
-        showBackground ? 'hotel-bg' : 'bg-navy',
+        showBackground ? 'facility-bg' : 'bg-navy',
         className
       )}
     >

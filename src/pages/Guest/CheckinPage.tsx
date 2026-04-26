@@ -43,7 +43,7 @@ const FIELD_VARIANTS = {
 };
 
 const INPUT =
-  'w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-gold transition-colors';
+  'w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-emerald-400 transition-colors';
 
 export default function CheckinPage() {
   const navigate   = useNavigate();
@@ -87,14 +87,14 @@ export default function CheckinPage() {
         checkedIn:   true,
       });
 
-      toast.success(`Welcome ${guest.name}! Room ${guest.roomNumber} confirmed.`);
+      toast.success(`Welcome ${guest.name}! Unit ${guest.roomNumber} confirmed.`);
       navigate('/guest-dashboard');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Check-in failed';
       setApiError(msg);
       // If room is occupied surface as a distinct warning
       if (msg.toLowerCase().includes('occupied')) {
-        toast.error('Room is already occupied — choose another room.');
+        toast.error('Unit is already registered — choose another unit.');
       }
     } finally {
       setLoading(false);
@@ -107,11 +107,11 @@ export default function CheckinPage() {
       <div className="flex-1 flex items-start justify-center px-4 py-8">
         <GlassCard className="w-full max-w-md">
           <div className="mb-6">
-            <h1 className="font-playfair text-gold text-3xl font-bold mb-1">
-              Guest Check-In
+            <h1 className="font-outfit text-white text-3xl font-bold mb-1">
+              Resident <span className="text-emerald-400">Access</span>
             </h1>
             <p className="text-white/60 text-sm">
-              Enter your details to receive your personalised emergency exit guide.
+              Enter your details to receive your personalised community safety guide.
             </p>
           </div>
 
@@ -144,9 +144,9 @@ export default function CheckinPage() {
               </motion.div>
             </div>
 
-            {/* Room Number */}
+            {/* Unit Number */}
             <motion.div custom={2} variants={FIELD_VARIANTS} initial="hidden" animate="visible">
-              <label className="text-white/50 text-xs mb-1 block">Room Number</label>
+              <label className="text-white/50 text-xs mb-1 block">Unit / Zone Number</label>
               <input
                 {...register('roomNumber', {
                   valueAsNumber: true,
@@ -166,9 +166,9 @@ export default function CheckinPage() {
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="text-gold text-xs mt-1"
+                    className="text-emerald-400 text-xs mt-1"
                   >
-                    📍 Floor {detectedFloor} detected
+                    📍 Level {detectedFloor} detected
                   </motion.p>
                 )}
               </AnimatePresence>
@@ -206,8 +206,8 @@ export default function CheckinPage() {
 
             {/* Submit */}
             <motion.div custom={3} variants={FIELD_VARIANTS} initial="hidden" animate="visible">
-              <Button variant="gold" type="submit" fullWidth disabled={loading}>
-                {loading ? 'Checking In…' : 'Check In & Get My Exit Guide'}
+              <Button variant="gold" type="submit" fullWidth disabled={loading} className="bg-emerald-500 hover:bg-emerald-600 border-none text-navy font-bold">
+                {loading ? 'Accessing…' : 'Get My Safety Guide'}
               </Button>
             </motion.div>
           </form>

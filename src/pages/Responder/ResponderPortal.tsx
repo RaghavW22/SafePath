@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Activity, Users, AlertOctagon, ScrollText, Clock } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
 import GlassCard from '../../components/GlassCard/GlassCard';
-import HotelMap from '../../components/HotelMap/HotelMap';
+import SafetyMap from '../../components/HotelMap/SafetyMap';
 import { useAppStore } from '../../store/useAppStore';
 import { api, type ApiAlert, type RoomStatus, type StatsResponse, type ApiBroadcast } from '../../api/client';
 
@@ -135,7 +135,7 @@ export default function ResponderPortal() {
       arr.push({
         time: timeStr,
         timestamp: a.timestamp ? new Date(a.timestamp).getTime() : 0,
-        text: `[Room ${a.room_number}] SOS Level ${a.severity}: ${a.message}`,
+        text: `[Unit ${a.room_number}] SOS Level ${a.severity}: ${a.message}`,
         color: a.status === 'active' ? 'red' : 'green'
       });
     });
@@ -172,15 +172,15 @@ export default function ResponderPortal() {
         {/* COLUMN 1: Digital Twin */}
         <GlassCard className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
-            <Activity size={20} className="text-gold" />
-            <h2 className="font-playfair text-white text-xl font-semibold">Live Floor Plan</h2>
+            <Activity size={20} className="text-emerald-400" />
+            <h2 className="font-outfit text-white text-xl font-semibold">Live Community Map</h2>
           </div>
 
           {shimmer ? (
             <div className="w-full h-[400px] rounded-xl shimmer" />
           ) : (
             <div className="bg-navy-light rounded-xl overflow-hidden border border-white/10" style={{ height: '400px' }}>
-              <HotelMap
+              <SafetyMap
                 rooms={rooms}
                 activeAlerts={activeAlerts}
                 readOnly={false}
@@ -194,8 +194,8 @@ export default function ResponderPortal() {
 
           {/* Legend */}
           <div className="flex gap-4 flex-wrap text-xs">
-            <span className="flex items-center gap-1.5 text-gold">
-              <span className="w-3 h-3 rounded bg-gold/60 inline-block" /> Occupied
+            <span className="flex items-center gap-1.5 text-emerald-400">
+              <span className="w-3 h-3 rounded bg-emerald-500/60 inline-block" /> Active
             </span>
             <span className="flex items-center gap-1.5 text-danger">
               <span className="w-3 h-3 rounded bg-danger/70 inline-block" /> Danger
@@ -209,16 +209,16 @@ export default function ResponderPortal() {
         {/* COLUMN 2: Occupancy Summary */}
         <GlassCard className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
-            <Users size={20} className="text-gold" />
-            <h2 className="font-playfair text-white text-xl font-semibold">Occupancy Summary</h2>
+            <Users size={20} className="text-emerald-400" />
+            <h2 className="font-outfit text-white text-xl font-semibold">Population Summary</h2>
           </div>
 
           <table className="w-full text-sm">
             <thead>
               <tr className="text-white/40 text-left border-b border-white/10">
-                <th className="pb-2 font-medium">Floor</th>
-                <th className="pb-2 font-medium">Rooms</th>
-                <th className="pb-2 font-medium">Occupied</th>
+                <th className="pb-2 font-medium">Level</th>
+                <th className="pb-2 font-medium">Units</th>
+                <th className="pb-2 font-medium">Active</th>
                 <th className="pb-2 font-medium">SOS</th>
               </tr>
             </thead>
@@ -233,7 +233,7 @@ export default function ResponderPortal() {
                   </td>
                 </tr>
               ))}
-              <tr className="text-gold font-semibold">
+              <tr className="text-emerald-400 font-semibold">
                 <td className="pt-3">Total</td>
                 <td className="pt-3">{totalRooms}</td>
                 <td className="pt-3">{totalOccupied}</td>
@@ -249,14 +249,14 @@ export default function ResponderPortal() {
             <div
               className="w-24 h-24 rounded-full relative flex items-center justify-center"
               style={{
-                background: `conic-gradient(#D4AF37 0% ${occupancyPct}%, #112240 ${occupancyPct}% 100%)`,
+                background: `conic-gradient(#10B981 0% ${occupancyPct}%, #112240 ${occupancyPct}% 100%)`,
               }}
             >
               <div className="w-16 h-16 bg-navy-light rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">{occupancyPct}%</span>
               </div>
             </div>
-            <p className="text-white/40 text-xs mt-2">Occupancy Rate</p>
+            <p className="text-white/40 text-xs mt-2">Population Density</p>
           </div>
         </GlassCard>
 
@@ -264,7 +264,7 @@ export default function ResponderPortal() {
         <GlassCard className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <AlertOctagon size={20} className="text-red-400" />
-            <h2 className="font-playfair text-white text-xl font-semibold">Priority Rooms</h2>
+            <h2 className="font-outfit text-white text-xl font-semibold">Priority Units</h2>
           </div>
 
           <div className="flex flex-col gap-4">
@@ -285,8 +285,8 @@ export default function ResponderPortal() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-gold font-bold">Room {room.roomNumber}</span>
-                      <span className="text-white/60 text-sm">Floor {room.floor}</span>
+                      <span className="text-emerald-400 font-bold">Unit {room.roomNumber}</span>
+                      <span className="text-white/60 text-sm">Level {room.floor}</span>
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
                       <span className="text-white/60 text-xs flex items-center gap-1">
@@ -320,8 +320,8 @@ export default function ResponderPortal() {
         <div className="lg:col-span-3">
           <GlassCard>
             <div className="flex items-center gap-2 mb-4">
-              <ScrollText size={20} className="text-gold" />
-              <h2 className="font-playfair text-white text-xl font-semibold">Event Log</h2>
+              <ScrollText size={20} className="text-emerald-400" />
+              <h2 className="font-outfit text-white text-xl font-semibold">Safety Log</h2>
             </div>
             <div
               ref={logRef}
