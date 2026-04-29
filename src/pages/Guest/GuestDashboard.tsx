@@ -97,6 +97,7 @@ export default function GuestDashboard() {
   const navigate = useNavigate();
   const guestProfile = useAppStore((s) => s.guestProfile);
   const dangerZones = useAppStore((s) => s.dangerZones);
+  const setDangerZones = useAppStore((s) => s.setDangerZones);
   const [apiBroadcasts, setApiBroadcasts] = useState<any[]>([]);
   const [sosActive, setSosActive] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -132,9 +133,12 @@ export default function GuestDashboard() {
   const selectedOption = EMERGENCY_OPTIONS.find(o => o.label === emergencyCategory) || EMERGENCY_OPTIONS[0];
   const currentSeverity = selectedOption.severity;
 
+  const setActiveRole = useAppStore((s) => s.setActiveRole);
+
   useEffect(() => {
+    setActiveRole('guest');
     if (!guestProfile) navigate('/checkin');
-  }, [guestProfile, navigate]);
+  }, [guestProfile, navigate, setActiveRole]);
 
   // Fetch room statuses and broadcasts
   const fetchRooms = useCallback(async () => {
@@ -198,10 +202,16 @@ export default function GuestDashboard() {
       });
     }
 
+    const dangerQuery = query(collection(db, 'danger_zones'));
+    const unsubDanger = onSnapshot(dangerQuery, (snap) => {
+      setDangerZones(snap.docs.map(doc => doc.data() as any));
+    });
+
     return () => {
       clearInterval(rid);
       unsubBroadcasts();
       unsubSOS();
+      unsubDanger();
     };
   }, [fetchRooms, guestProfile]);
 

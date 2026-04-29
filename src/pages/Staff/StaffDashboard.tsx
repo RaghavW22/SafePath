@@ -17,7 +17,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../api/client';
 import type { RoomStatus, GuestRecord, StatsResponse, RegisterGuestResponse, ApiAlert, ApiBroadcast } from '../../api/client';
 import { db } from '../../firebase';
-import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, limit, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 type Tab = 'register' | 'alerts' | 'map' | 'guests' | 'broadcast' | 'occupancy' | 'staff';
 
@@ -602,7 +602,7 @@ function GuestsTab() {
 }
 
 // ─── Occupancy Tab ────────────────────────────────────────────────────────────
-function OccupancyTab({ stats }: { stats: StatsResponse | null }) {
+function OccupancyTab({ stats, onReset }: { stats: StatsResponse | null; onReset: () => void }) {
   if (!stats) return (
     <div className="flex items-center gap-2 text-white/40 py-12 justify-center">
       <RefreshCw size={18} className="animate-spin" />
@@ -631,10 +631,17 @@ function OccupancyTab({ stats }: { stats: StatsResponse | null }) {
           </GlassCard>
         ))}
       </div>
-      <div className="flex gap-6 text-sm text-white/60">
+      <div className="flex gap-6 text-sm text-white/60 items-center">
         <span>Total: <span className="text-white font-bold">{stats.total}</span></span>
         <span>Occupied: <span className="text-red-400 font-bold">{stats.occupied}</span></span>
         <span>Available: <span className="text-green-400 font-bold">{stats.available}</span></span>
+        
+        <button
+          onClick={onReset}
+          className="ml-auto flex items-center gap-2 text-[10px] text-white/30 hover:text-red-400 border border-white/10 hover:border-red-400/30 rounded-lg px-3 py-1.5 transition-all uppercase font-bold tracking-widest"
+        >
+          <RefreshCw size={10} /> Reset System Data
+        </button>
       </div>
     </div>
   );
@@ -763,6 +770,7 @@ export default function StaffDashboard() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
 
   const [isMuted, setIsMuted] = useState(false);
+  const [isDangerMode, setIsDangerMode] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);
 
@@ -770,8 +778,50 @@ export default function StaffDashboard() {
   const [broadcastMessages, setBroadcastMessages] = useState<ApiBroadcast[]>([]);
 
   const dangerZones = useAppStore((s) => s.dangerZones);
-  const toggleDangerZone = useAppStore((s) => s.toggleDangerZone);
+  const setDangerZones = useAppStore((s) => s.setDangerZones);
   const setActiveRole = useAppStore((s) => s.setActiveRole);
+
+  const toggleDangerZone = async (roomId: string) => {
+    try {
+      const existing = dangerZones.find(z => z.roomId === roomId);
+      if (!existing) {
+        await setDoc(doc(db, 'danger_zones', roomId), { roomId, level: 'warning' });
+      } else if (existing.level === 'warning') {
+        await setDoc(doc(db, 'danger_zones', roomId), { roomId, level: 'danger' }, { merge: true });
+      } else {
+        await deleteDoc(doc(db, 'danger_zones', roomId));
+      }
+    } catch (error) {
+      console.error("Firestore Danger Zone Error:", error);
+      toast.error("Failed to update safety status. Check connection.");
+    }
+  };
+
+  const clearAllDangerZones = async () => {
+    if (!window.confirm('Clear all marked danger zones? This will reset all evacuation routes to default.')) return;
+    try {
+      const docs = dangerZones.map(z => deleteDoc(doc(db, 'danger_zones', z.roomId)));
+      await Promise.all(docs);
+      toast.success('All danger zones cleared.');
+    } catch (err) {
+      toast.error('Failed to clear danger zones.');
+    }
+  };
+
+  const handleClearTrials = async () => {
+    if (!window.confirm('RESET SYSTEM? This deletes ALL guests, alerts, broadcasts, and resets room occupancy.')) return;
+    try {
+      await api.clearTrials();
+      // Also clear danger zones locally/firestore
+      const docs = dangerZones.map(z => deleteDoc(doc(db, 'danger_zones', z.roomId)));
+      await Promise.all(docs);
+      
+      fetchRooms(); fetchStats(); fetchAlerts(); fetchBroadcasts();
+      toast.success('System reset successfully.');
+    } catch (err) {
+      toast.error('Failed to reset system.');
+    }
+  };
 
   const activeAlerts = alerts.filter((a) => a.status === 'active');
   const resolvedAlerts = alerts.filter((a) => a.status === 'acknowledged');
@@ -890,10 +940,20 @@ export default function StaffDashboard() {
       fetchStats();
     });
 
+    const dangerQuery = query(collection(db, 'danger_zones'));
+    const unsubDanger = onSnapshot(dangerQuery, (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as any);
+      console.log("🔥 Danger Zones Sync:", data);
+      setDangerZones(data);
+    }, (error) => {
+      console.error("Danger Zones Listener Error:", error);
+    });
+
     return () => {
       unsubAlerts();
       unsubBroadcasts();
       unsubRooms();
+      unsubDanger();
     };
   }, [fetchRooms, fetchStats, fetchAlerts, fetchBroadcasts, setActiveRole]);
 
@@ -1009,6 +1069,16 @@ export default function StaffDashboard() {
                           </button>
                         ))}
                       </div>
+                      <Button 
+                        variant="danger" 
+                        className="text-sm py-1.5 px-4 flex items-center gap-2"
+                        onClick={() => {
+                          toggleDangerZone(String(alert.room_number));
+                          toast.error(`Unit ${alert.room_number} marked as Danger Zone!`);
+                        }}
+                      >
+                        <Shield size={14} /> Mark Danger
+                      </Button>
                       <Button variant="ghost" className="text-sm py-1.5 px-4 ml-auto"
                         onClick={() => setActiveTab('map')}>
                         View on Map
@@ -1057,16 +1127,51 @@ export default function StaffDashboard() {
                 <h2 className="font-playfair text-white text-2xl font-semibold">Interactive Community Map</h2>
               </div>
               <GlassCard>
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
+                  <div>
+                    <h3 className="text-white font-semibold">Map Controls</h3>
+                    <p className="text-white/40 text-xs mt-0.5">Toggle danger zones or select broadcast targets</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-2 shadow-inner">
+                    <span className={`text-xs font-bold uppercase tracking-widest ${isDangerMode ? 'text-red-400' : 'text-white/30'}`}>
+                      {isDangerMode ? '🚨 Danger Mode: ON' : 'Selection Mode'}
+                    </span>
+                    <button
+                      onClick={() => setIsDangerMode(!isDangerMode)}
+                      className={`relative w-12 h-6 rounded-full transition-all duration-300 ${isDangerMode ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-white/20'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 ${isDangerMode ? 'left-7' : 'left-1'}`} />
+                    </button>
+                    {dangerZones.length > 0 && (
+                      <button
+                        onClick={clearAllDangerZones}
+                        className="ml-2 text-[10px] text-red-400/50 hover:text-red-400 border border-red-400/20 hover:border-red-400/40 rounded px-2 py-1 transition-all uppercase font-bold"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <p className="text-white/50 text-sm mb-4">
-                  Click a room to target for broadcast. Current Target: <span className="text-gold font-bold">{broadcastTarget === 'all' ? 'All' : broadcastTarget}</span>
+                  {isDangerMode 
+                    ? "Click rooms to cycle through Warning ⚠️ and Danger 🚨 states. This updates all guest routes live."
+                    : <span>Click a room to target for broadcast. Current Target: <span className="text-gold font-bold">{broadcastTarget === 'all' ? 'All' : broadcastTarget}</span></span>
+                  }
                 </p>
                 <SafetyMap 
                   rooms={rooms} 
                   dangerZones={dangerZones} 
                   onRoomClick={(r) => {
-                    setBroadcastTarget(`room${r}`);
-                    toast.success(`Target set to Unit ${r} for broadcasting.`);
-                    setActiveTab('broadcast');
+                    if (isDangerMode) {
+                      toggleDangerZone(String(r));
+                      toast.success(`Room ${r} safety status updated.`);
+                    } else {
+                      setBroadcastTarget(`room${r}`);
+                      toast.success(`Target set to Unit ${r} for broadcasting.`);
+                      setActiveTab('broadcast');
+                    }
                   }} 
                   showLegend 
                 />
@@ -1200,7 +1305,7 @@ export default function StaffDashboard() {
             </div>
           )}
 
-          {activeTab === 'occupancy' && <OccupancyTab stats={stats} />}
+          {activeTab === 'occupancy' && <OccupancyTab stats={stats} onReset={handleClearTrials} />}
         </div>
       </main>
     </div>

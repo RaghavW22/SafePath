@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { motion } from 'framer-motion';
 import { Activity, Users, AlertOctagon, ScrollText, Clock } from 'lucide-react';
+import toast from 'react-hot-toast';
 import Navbar from '../../components/Navbar/Navbar';
 import GlassCard from '../../components/GlassCard/GlassCard';
 import SafetyMap from '../../components/HotelMap/SafetyMap';
@@ -27,10 +28,28 @@ const eventDotColor: Record<string, string> = {
 
 export default function ResponderPortal() {
   const dangerZones = useAppStore((s) => s.dangerZones);
+  const setDangerZones = useAppStore((s) => s.setDangerZones);
   const setActiveRole = useAppStore((s) => s.setActiveRole);
+  const toggleDangerZone = async (roomId: string) => {
+    try {
+      const existing = dangerZones.find(z => z.roomId === roomId);
+      if (!existing) {
+        await setDoc(doc(db, 'danger_zones', roomId), { roomId, level: 'warning' });
+      } else if (existing.level === 'warning') {
+        await setDoc(doc(db, 'danger_zones', roomId), { roomId, level: 'danger' }, { merge: true });
+      } else {
+        await deleteDoc(doc(db, 'danger_zones', roomId));
+      }
+    } catch (error) {
+      console.error("Firestore Danger Zone Error:", error);
+      toast.error("Failed to update safety status.");
+    }
+  };
+
   const clock = useClockTick();
   const [lastUpdated, setLastUpdated] = useState(0);
   const [shimmer, setShimmer] = useState(true);
+  const [isDangerMode, setIsDangerMode] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
   const [rooms,           setRooms]           = useState<RoomStatus[]>([]);
@@ -83,10 +102,20 @@ export default function ResponderPortal() {
         setRooms(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
     });
 
+    const dangerQuery = query(collection(db, 'danger_zones'));
+    const unsubDanger = onSnapshot(dangerQuery, (snap) => {
+      const data = snap.docs.map(doc => doc.data() as any);
+      console.log("🔥 Responder Danger Sync:", data);
+      setDangerZones(data);
+    }, (error) => {
+      console.error("Responder Danger Listener Error:", error);
+    });
+
     return () => {
       unsubAlerts();
       unsubBroadcasts();
       unsubRooms();
+      unsubDanger();
     };
   }, [fetchData, setActiveRole]);
 
@@ -180,10 +209,27 @@ export default function ResponderPortal() {
             <div className="w-full h-[400px] rounded-xl shimmer" />
           ) : (
             <div className="bg-navy-light rounded-xl overflow-hidden border border-white/10" style={{ height: '400px' }}>
+              <div className="p-3 border-b border-white/10 flex items-center justify-between">
+                <span className={`text-[10px] font-bold uppercase tracking-widest ${isDangerMode ? 'text-red-400' : 'text-white/30'}`}>
+                  {isDangerMode ? '🚨 Danger Mode: ON' : 'Viewer Mode'}
+                </span>
+                <button
+                  onClick={() => setIsDangerMode(!isDangerMode)}
+                  className={`relative w-10 h-5 rounded-full transition-all duration-300 ${isDangerMode ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]' : 'bg-white/20'}`}
+                >
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all duration-300 ${isDangerMode ? 'left-5' : 'left-0.5'}`} />
+                </button>
+              </div>
               <SafetyMap
                 rooms={rooms}
                 activeAlerts={activeAlerts}
-                readOnly={false}
+                dangerZones={dangerZones}
+                readOnly={!isDangerMode}
+                onRoomClick={(r) => {
+                  if (isDangerMode) {
+                    toggleDangerZone(String(r));
+                  }
+                }}
               />
             </div>
           )}

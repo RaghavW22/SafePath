@@ -79,15 +79,15 @@ export default function CheckinPage() {
 
       const guest = res.guest;
       setGuest({
-        id:          `guest-${guest.roomNumber}`,
-        name:        guest.name,
-        roomNumber:  guest.roomNumber,
+        id:          `guest-${guest.room_number}`,
+        name:        guest.guest_name,
+        roomNumber:  guest.room_number,
         floor:       guest.floor,
         language:    guest.language,
         checkedIn:   true,
       });
 
-      toast.success(`Welcome ${guest.name}! Unit ${guest.roomNumber} confirmed.`);
+      toast.success(`Welcome ${guest.guest_name}! Unit ${guest.room_number} confirmed.`);
       navigate('/guest-dashboard');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Check-in failed';

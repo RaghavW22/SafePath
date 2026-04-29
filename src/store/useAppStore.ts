@@ -12,6 +12,7 @@ interface AppState {
   acknowledgeAlert: (id: string) => void;
 
   dangerZones: DangerZone[];
+  setDangerZones: (zones: DangerZone[]) => void;
   toggleDangerZone: (roomId: string) => void;
 
   activeRole: UserRole | null;
@@ -39,7 +40,10 @@ export const useAppStore = create<AppState>()(
         })),
 
       dangerZones: [],
+      setDangerZones: (zones) => set({ dangerZones: zones }),
       toggleDangerZone: (roomId) => {
+        // This will be overridden or called by Firestore-backed logic in components
+        // For now, keeping the local logic as a fallback
         const zones = get().dangerZones;
         const existing = zones.find((z) => z.roomId === roomId);
         if (!existing) {
@@ -70,7 +74,6 @@ export const useAppStore = create<AppState>()(
       name: 'safepath-storage',
       partialize: (state) => ({
         guestProfile: state.guestProfile,
-        dangerZones: state.dangerZones,
         activeRole: state.activeRole,
       }),
     }

@@ -320,8 +320,7 @@ export default function SafetyMap({
     // Determine which room to route from
     let startNum: number | null = null;
     if (activeRole === 'guest') {
-      // Route only appears after guest presses SOS
-      if (!sosActive) return null;
+      // Show route always for the guest's own room (Live Route feature)
       if (guestRoomNum) startNum = Number(guestRoomNum);
     } else {
       if (selected?.kind === 'room' && selected.roomData) {
