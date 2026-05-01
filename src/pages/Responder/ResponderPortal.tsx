@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
-import { collection, query, orderBy, onSnapshot, where, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { supabase } from '../../supabase';
 import { motion } from 'framer-motion';
 import { Activity, Users, AlertOctagon, ScrollText, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -9,7 +8,7 @@ import Navbar from '../../components/Navbar/Navbar';
 import GlassCard from '../../components/GlassCard/GlassCard';
 import SafetyMap from '../../components/HospitalMap/SafetyMap';
 import { useAppStore } from '../../store/useAppStore';
-import { api, type ApiAlert, type RoomStatus, type StatsResponse, type ApiBroadcast } from '../../api/client';
+import { api, type ApiAlert, type RoomStatus, type ApiBroadcast } from '../../api/client';
 
 function useClockTick(): string {
   const [time, setTime] = useState(new Date().toLocaleTimeString());
@@ -41,14 +40,14 @@ export default function ResponderPortal() {
     try {
       const existing = dangerZones.find(z => z.roomId === roomId);
       if (!existing) {
-        await setDoc(doc(db, 'danger_zones', roomId), { roomId, level: 'warning' });
+        await api.upsertDangerZone(roomId, 'warning');
       } else if (existing.level === 'warning') {
-        await setDoc(doc(db, 'danger_zones', roomId), { roomId, level: 'danger' }, { merge: true });
+        await api.upsertDangerZone(roomId, 'danger');
       } else {
-        await deleteDoc(doc(db, 'danger_zones', roomId));
+        await api.deleteDangerZone(roomId);
       }
     } catch (error) {
-      console.error("Firestore Danger Zone Error:", error);
+      console.error("Danger Zone Error:", error);
       toast.error("Failed to update safety status.");
     }
   };
@@ -59,23 +58,20 @@ export default function ResponderPortal() {
   const [isDangerMode, setIsDangerMode] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
-  const [rooms,           setRooms]           = useState<RoomStatus[]>([]);
-  const [stats,           setStats]           = useState<StatsResponse | null>(null);
-  const [alerts,          setAlerts]          = useState<ApiAlert[]>([]);
-  const [broadcasts,      setBroadcasts]      = useState<ApiBroadcast[]>([]);
+  const [rooms, setRooms] = useState<RoomStatus[]>([]);
+  const [alerts, setAlerts] = useState<ApiAlert[]>([]);
+  const [broadcasts, setBroadcasts] = useState<ApiBroadcast[]>([]);
 
   const activeAlerts = alerts.filter(a => a.status === 'active');
 
   const fetchData = useCallback(async () => {
     try {
-      const [rRes, sRes, aRes, bRes] = await Promise.all([
+      const [rRes, aRes, bRes] = await Promise.all([
         api.getRooms(),
-        api.getStats(),
         api.getAlerts(),
         api.getBroadcasts()
       ]);
       setRooms(rRes);
-      setStats(sRes);
       setAlerts(aRes);
       setBroadcasts(bRes);
       setLastUpdated(0);
@@ -91,37 +87,23 @@ export default function ResponderPortal() {
 
   useEffect(() => {
     fetchData(); // Initial full fetch
-    
-    // Real-time Firestore listeners for Responder
-    const alertsQuery = query(collection(db, 'alerts'), orderBy('timestamp', 'desc'));
-    const unsubAlerts = onSnapshot(alertsQuery, (snap) => {
-        setAlerts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
-    });
 
-    const broadcastsQuery = query(collection(db, 'broadcasts'), orderBy('timestamp', 'desc'));
-    const unsubBroadcasts = onSnapshot(broadcastsQuery, (snap) => {
-        setBroadcasts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
-    });
+    // Initial danger zones fetch
+    api.getDangerZones().then(zones => {
+      setDangerZones(zones.map(z => ({ roomId: z.room_id, level: z.level as 'warning' | 'danger' })));
+    }).catch(() => { });
 
-    const roomsQuery = query(collection(db, 'rooms'));
-    const unsubRooms = onSnapshot(roomsQuery, (snap) => {
-        setRooms(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
-    });
+    // Polling fallback instead of Supabase Realtime
+    const pollInterval = setInterval(() => {
+      fetchData(); // fetches rooms, alerts, broadcasts
 
-    const dangerQuery = query(collection(db, 'danger_zones'));
-    const unsubDanger = onSnapshot(dangerQuery, (snap) => {
-      const data = snap.docs.map(doc => doc.data() as any);
-      console.log("🔥 Responder Danger Sync:", data);
-      setDangerZones(data);
-    }, (error) => {
-      console.error("Responder Danger Listener Error:", error);
-    });
+      api.getDangerZones().then(zones => {
+        setDangerZones(zones.map(z => ({ roomId: z.room_id, level: z.level as 'warning' | 'danger' })));
+      }).catch(() => { });
+    }, 2000); // Poll every 2 seconds
 
     return () => {
-      unsubAlerts();
-      unsubBroadcasts();
-      unsubRooms();
-      unsubDanger();
+      clearInterval(pollInterval);
     };
   }, [fetchData, setActiveRole]);
 
@@ -136,19 +118,39 @@ export default function ResponderPortal() {
     }
   }, [alerts, broadcasts]);
 
+  const stats = useMemo(() => {
+    const total = rooms.length;
+    const occupied = rooms.filter(r => r.status === 'occupied').length;
+    const available = total - occupied;
+    const byFloorMap: Record<number, any> = {};
+
+    rooms.forEach(r => {
+      if (!byFloorMap[r.floor]) byFloorMap[r.floor] = { floor: r.floor, total: 0, occupied: 0 };
+      byFloorMap[r.floor].total++;
+      if (r.status === 'occupied') byFloorMap[r.floor].occupied++;
+    });
+
+    return {
+      total,
+      occupied,
+      available,
+      byFloor: Object.values(byFloorMap).sort((a, b) => a.floor - b.floor)
+    };
+  }, [rooms]);
+
   const occupancyRows = useMemo(() => {
-    return stats?.byFloor.map(f => ({
+    return stats.byFloor.map(f => ({
       floor: f.floor,
       rooms: f.total,
       occupied: f.occupied,
       sos: activeAlerts.filter(a => a.floor === f.floor).length
-    })) || [];
+    }));
   }, [stats, activeAlerts]);
 
-  const totalOccupied = stats?.occupied || 0;
-  const totalRooms    = stats?.total || 1;
-  const totalSOS      = activeAlerts.length;
-  const occupancyPct  = Math.round((totalOccupied / totalRooms) * 100) || 0;
+  const totalOccupied = stats.occupied;
+  const totalRooms = stats.total || 1;
+  const totalSOS = activeAlerts.length;
+  const occupancyPct = Math.round((totalOccupied / totalRooms) * 100) || 0;
 
   const priorityRooms = useMemo(() => {
     return activeAlerts
@@ -328,43 +330,42 @@ export default function ResponderPortal() {
                   key={`${room.roomNumber}-${index}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex flex-col gap-1.5"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-full bg-danger flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                    S{room.severity}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-emerald-400 font-bold">Unit {room.roomNumber}</span>
-                      <span className="text-white/60 text-sm">Level {room.floor}</span>
+                  transition={{ delay: index * 0.1 }}
+                  className="flex flex-col gap-1.5"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-full bg-danger flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                      S{room.severity}
                     </div>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <span className="text-white/60 text-xs flex items-center gap-1">
-                        <Clock size={10} />
-                        {room.elapsedMinutes} mins ago
-                      </span>
-                      <span
-                        className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                          room.status === 'unconfirmed'
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-bold">Unit {room.roomNumber}</span>
+                        <span className="text-white/60 text-sm">Level {room.floor}</span>
+                      </div>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <span className="text-white/60 text-xs flex items-center gap-1">
+                          <Clock size={10} />
+                          {room.elapsedMinutes} mins ago
+                        </span>
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${room.status === 'unconfirmed'
                             ? 'bg-danger/20 text-red-400'
                             : 'bg-white/10 text-white/50'
-                        }`}
-                      >
-                        {room.status}
-                      </span>
+                            }`}
+                        >
+                          {room.status}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="bg-danger/20 h-1 rounded-full overflow-hidden">
-                  <div
-                    className="bg-danger h-1 rounded-full transition-all"
-                    style={{ width: `${Math.min((room.elapsedMinutes / 10) * 100, 100)}%` }}
-                  />
-                </div>
-              </motion.div>
-            )))}
+                  <div className="bg-danger/20 h-1 rounded-full overflow-hidden">
+                    <div
+                      className="bg-danger h-1 rounded-full transition-all"
+                      style={{ width: `${Math.min((room.elapsedMinutes / 10) * 100, 100)}%` }}
+                    />
+                  </div>
+                </motion.div>
+              )))}
           </div>
         </GlassCard>
 
@@ -380,7 +381,7 @@ export default function ResponderPortal() {
               className="max-h-48 overflow-y-auto custom-scroll flex flex-col gap-0"
             >
               {appEvents.length === 0 && (
-                 <p className="text-white/40 text-sm p-4 text-center mb-8">No events logged yet.</p>
+                <p className="text-white/40 text-sm p-4 text-center mb-8">No events logged yet.</p>
               )}
               {appEvents.map((event, idx) => (
                 <div

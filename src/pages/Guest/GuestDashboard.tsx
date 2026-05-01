@@ -11,8 +11,7 @@ import SafetyMap from '../../components/HospitalMap/SafetyMap';
 import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../api/client';
 import type { RoomStatus } from '../../api/client';
-import { db } from '../../firebase';
-import { collection, onSnapshot, query, orderBy, limit, where } from 'firebase/firestore';
+import { supabase } from '../../supabase';
 
 // Language name → BCP-47 code for SpeechSynthesis
 const LANG_CODE: Record<string, string> = {
@@ -178,42 +177,51 @@ export default function GuestDashboard() {
   }, [guestProfile]);
 
   useEffect(() => {
-    fetchRooms();
+    // Initial data fetch
+    api.getRooms().then(setRooms).catch(() => {});
+    api.getDangerZones().then(zones => {
+      setDangerZones(zones.map(z => ({ roomId: z.room_id, level: z.level as 'warning' | 'danger' })));
+    }).catch(() => {});
+    fetchBroadcasts();
 
-    // Polling for local rooms data (state machine)
-    const rid = setInterval(fetchRooms, 3000);
-
-    // Real-time Firestore for Broadcasts — we use it as a trigger to fetch translated versions from API
-    const broadcastQuery = query(collection(db, 'broadcasts'), orderBy('timestamp', 'desc'), limit(10));
-    const unsubBroadcasts = onSnapshot(broadcastQuery, () => {
-      fetchBroadcasts();
-    });
-
-    // SOS Status Sync: If ANY active alert exists for this room in Firestore, SOS is active here
-    let unsubSOS = () => { };
+    // Check SOS status
     if (guestProfile?.roomNumber) {
-      const sosQuery = query(
-        collection(db, 'alerts'),
-        where('room_number', '==', Number(guestProfile.roomNumber)),
-        where('status', '==', 'active')
-      );
-      unsubSOS = onSnapshot(sosQuery, (snap) => {
-        setSosActive(!snap.empty);
-      });
+      api.getAlerts().then(alerts => {
+        const hasActive = alerts.some(
+          (a: any) => a.room_number === Number(guestProfile.roomNumber) && a.status === 'active'
+        );
+        setSosActive(hasActive);
+      }).catch(() => {});
     }
 
-    const dangerQuery = query(collection(db, 'danger_zones'));
-    const unsubDanger = onSnapshot(dangerQuery, (snap) => {
-      setDangerZones(snap.docs.map(doc => doc.data() as any));
-    });
+    // Polling fallback instead of Supabase Realtime
+    const pollInterval = setInterval(() => {
+      // Fetch Rooms
+      api.getRooms().then(setRooms).catch(() => {});
+      
+      // Fetch Broadcasts
+      fetchBroadcasts();
+
+      // Fetch Danger Zones
+      api.getDangerZones().then(zones => {
+        setDangerZones(zones.map(z => ({ roomId: z.room_id, level: z.level as 'warning' | 'danger' })));
+      }).catch(() => {});
+
+      // Fetch Alerts
+      if (guestProfile?.roomNumber) {
+        api.getAlerts().then(alerts => {
+          const hasActive = alerts.some(
+            (a: any) => a.room_number === Number(guestProfile.roomNumber) && a.status === 'active'
+          );
+          setSosActive(hasActive);
+        }).catch(() => {});
+      }
+    }, 2000); // Poll every 2 seconds
 
     return () => {
-      clearInterval(rid);
-      unsubBroadcasts();
-      unsubSOS();
-      unsubDanger();
+      clearInterval(pollInterval);
     };
-  }, [fetchRooms, guestProfile]);
+  }, [fetchBroadcasts, guestProfile, setDangerZones]);
 
   // SOS modal countdown
   useEffect(() => {
@@ -434,8 +442,8 @@ export default function GuestDashboard() {
               sosActive={sosActive}
             />
             <div className={`mt-3 p-3 rounded-xl border transition-all duration-500 ${sosActive
-                ? 'bg-red-900/30 border-red-500/60 animate-pulse'
-                : 'bg-white/5 border-white/10'
+              ? 'bg-red-900/30 border-red-500/60 animate-pulse'
+              : 'bg-white/5 border-white/10'
               }`}>
               <p className="text-white/70 text-sm font-medium flex items-center gap-2">
                 <span className={`w-4 h-1 rounded-full flex-shrink-0 ${sosActive ? 'bg-red-400' : 'bg-emerald-400 animate-pulse'

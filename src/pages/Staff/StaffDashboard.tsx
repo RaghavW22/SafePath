@@ -17,8 +17,8 @@ import SafetyMap from '../../components/HospitalMap/SafetyMap';
 import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../api/client';
 import type { RoomStatus, GuestRecord, StatsResponse, RegisterGuestResponse, ApiAlert, ApiBroadcast } from '../../api/client';
-import { db } from '../../firebase';
-import { collection, onSnapshot, query, orderBy, limit, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { supabase } from '../../supabase';
+import { api as dangerApi } from '../../api/client';
 
 type Tab = 'register' | 'alerts' | 'map' | 'guests' | 'broadcast' | 'occupancy' | 'staff';
 
@@ -636,7 +636,7 @@ function OccupancyTab({ stats, onReset }: { stats: StatsResponse | null; onReset
         <span>Total: <span className="text-white font-bold">{stats.total}</span></span>
         <span>Occupied: <span className="text-red-400 font-bold">{stats.occupied}</span></span>
         <span>Available: <span className="text-green-400 font-bold">{stats.available}</span></span>
-        
+
         <button
           onClick={onReset}
           className="ml-auto flex items-center gap-2 text-[10px] text-white/30 hover:text-red-400 border border-white/10 hover:border-red-400/30 rounded-lg px-3 py-1.5 transition-all uppercase font-bold tracking-widest"
@@ -792,14 +792,14 @@ export default function StaffDashboard() {
     try {
       const existing = dangerZones.find(z => z.roomId === roomId);
       if (!existing) {
-        await setDoc(doc(db, 'danger_zones', roomId), { roomId, level: 'warning' });
+        await dangerApi.upsertDangerZone(roomId, 'warning');
       } else if (existing.level === 'warning') {
-        await setDoc(doc(db, 'danger_zones', roomId), { roomId, level: 'danger' }, { merge: true });
+        await dangerApi.upsertDangerZone(roomId, 'danger');
       } else {
-        await deleteDoc(doc(db, 'danger_zones', roomId));
+        await dangerApi.deleteDangerZone(roomId);
       }
     } catch (error) {
-      console.error("Firestore Danger Zone Error:", error);
+      console.error("Danger Zone Error:", error);
       toast.error("Failed to update safety status. Check connection.");
     }
   };
@@ -807,8 +807,7 @@ export default function StaffDashboard() {
   const clearAllDangerZones = async () => {
     if (!window.confirm('Clear all marked danger zones? This will reset all evacuation routes to default.')) return;
     try {
-      const docs = dangerZones.map(z => deleteDoc(doc(db, 'danger_zones', z.roomId)));
-      await Promise.all(docs);
+      await dangerApi.clearAllDangerZones();
       toast.success('All danger zones cleared.');
     } catch (err) {
       toast.error('Failed to clear danger zones.');
@@ -819,10 +818,7 @@ export default function StaffDashboard() {
     if (!window.confirm('RESET SYSTEM? This deletes ALL guests, alerts, broadcasts, and resets room occupancy.')) return;
     try {
       await api.clearTrials();
-      // Also clear danger zones locally/firestore
-      const docs = dangerZones.map(z => deleteDoc(doc(db, 'danger_zones', z.roomId)));
-      await Promise.all(docs);
-      
+
       fetchRooms(); fetchStats(); fetchAlerts(); fetchBroadcasts();
       toast.success('System reset successfully.');
     } catch (err) {
@@ -910,62 +906,65 @@ export default function StaffDashboard() {
 
   useEffect(() => {
     fetchRooms(); fetchStats(); fetchAlerts(); fetchBroadcasts();
+    // Initial danger zones fetch
+    dangerApi.getDangerZones().then(zones => {
+      setDangerZones(zones.map(z => ({ roomId: z.room_id, level: z.level as 'warning' | 'danger' })));
+    }).catch(() => {});
 
-    // Real-time Firestore listeners
-    const alertsQuery = query(collection(db, 'alerts'), orderBy('timestamp', 'desc'));
-    const unsubAlerts = onSnapshot(alertsQuery, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+    // Polling fallback instead of Supabase Realtime
+    const pollInterval = setInterval(() => {
+      // 1. Fetch Broadcasts
+      fetchBroadcasts();
 
-      // Use functional update to compare with previous state for notifications
-      setAlerts(prevAlerts => {
-        const prevActive = prevAlerts.filter(a => a.status === 'active').length;
-        const newActiveData = data.filter(a => a.status === 'active');
+      // 2. Fetch Danger Zones
+      dangerApi.getDangerZones().then(zones => {
+        setDangerZones(zones.map(z => ({ roomId: z.room_id, level: z.level as 'warning' | 'danger' })));
+      }).catch(() => {});
 
-        if (newActiveData.length > prevActive) {
-          const newest = newActiveData[0];
-          toast.error(`🚨 EMERGENCY: Unit ${newest.room_number} - ${newest.guest_name}`, {
-            duration: 10000,
-            style: { background: '#991b1b', color: '#fff' }
-          });
-          setIsMuted(false);
-        }
-        return data;
-      });
-    });
+      // 3. Fetch Alerts and check for new ones
+      api.getAlerts().then(data => {
+        setAlerts(prevAlerts => {
+          const prevActive = prevAlerts.filter(a => a.status === 'active').length;
+          const newActiveData = data.filter(a => a.status === 'active');
 
-    const broadcastsQuery = query(collection(db, 'broadcasts'), orderBy('timestamp', 'desc'), limit(10));
-    const unsubBroadcasts = onSnapshot(broadcastsQuery, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-      setBroadcastMessages(data);
-    });
+          if (newActiveData.length > prevActive) {
+            const newest = newActiveData[0];
+            toast.error(`🚨 EMERGENCY: Unit ${newest.room_number} - ${newest.guest_name}`, {
+              duration: 10000,
+              style: { background: '#991b1b', color: '#fff' }
+            });
+            setIsMuted(false);
+          }
+          return data;
+        });
+      }).catch(() => {});
 
-    const roomsQuery = query(collection(db, 'rooms'));
-    const unsubRooms = onSnapshot(roomsQuery, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-      setRooms(data);
-      fetchStats();
-    });
+      // 4. Fetch Rooms and Stats
+      api.getRooms().then(data => {
+        setRooms(data);
+        const total = data.length;
+        const occupied = data.filter(r => r.status === 'occupied').length;
+        const available = total - occupied;
+        const floors: Record<number, any> = {};
+        data.forEach(r => {
+          if (!floors[r.floor]) floors[r.floor] = { floor: r.floor, total: 0, occupied: 0 };
+          floors[r.floor].total++;
+          if (r.status === 'occupied') floors[r.floor].occupied++;
+        });
+        setStats({
+          total, occupied, available,
+          byFloor: Object.values(floors).sort((a, b) => a.floor - b.floor)
+        });
+      }).catch(() => {});
 
-    const dangerQuery = query(collection(db, 'danger_zones'));
-    const unsubDanger = onSnapshot(dangerQuery, (snapshot) => {
-      const data = snapshot.docs.map(doc => doc.data() as any);
-      console.log("🔥 Danger Zones Sync:", data);
-      setDangerZones(data);
-    }, (error) => {
-      console.error("Danger Zones Listener Error:", error);
-    });
+    }, 2000); // Poll every 2 seconds
 
     return () => {
-      unsubAlerts();
-      unsubBroadcasts();
-      unsubRooms();
-      unsubDanger();
+      clearInterval(pollInterval);
     };
   }, [fetchRooms, fetchStats, fetchAlerts, fetchBroadcasts, setActiveRole]);
 
-  useEffect(() => {
-    if (activeTab === 'map' || activeTab === 'occupancy') { fetchRooms(); fetchStats(); }
-  }, [activeTab, fetchRooms, fetchStats]);
+
 
   const NAV: { id: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'register', label: 'Register Guest', icon: <UserPlus size={17} /> },
@@ -1075,8 +1074,8 @@ export default function StaffDashboard() {
                           </button>
                         ))}
                       </div>
-                      <Button 
-                        variant="danger" 
+                      <Button
+                        variant="danger"
                         className="text-sm py-1.5 px-4 flex items-center gap-2"
                         onClick={() => {
                           toggleDangerZone(String(alert.room_number));
@@ -1138,7 +1137,7 @@ export default function StaffDashboard() {
                     <h3 className="text-white font-semibold">Map Controls</h3>
                     <p className="text-white/40 text-xs mt-0.5">Toggle danger zones or select broadcast targets</p>
                   </div>
-                  
+
                   <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-2 shadow-inner">
                     <span className={`text-xs font-bold uppercase tracking-widest ${isDangerMode ? 'text-red-400' : 'text-white/30'}`}>
                       {isDangerMode ? '🚨 Danger Mode: ON' : 'Selection Mode'}
@@ -1161,14 +1160,15 @@ export default function StaffDashboard() {
                 </div>
 
                 <p className="text-white/50 text-sm mb-4">
-                  {isDangerMode 
+                  {isDangerMode
                     ? "Click rooms to cycle through Warning ⚠️ and Danger 🚨 states. This updates all guest routes live."
                     : <span>Click a room to target for broadcast. Current Target: <span className="text-gold font-bold">{broadcastTarget === 'all' ? 'All' : broadcastTarget}</span></span>
                   }
                 </p>
-                <SafetyMap 
-                  rooms={rooms} 
-                  dangerZones={dangerZones} 
+                <SafetyMap
+                  rooms={rooms}
+                  activeAlerts={activeAlerts}
+                  dangerZones={dangerZones}
                   onRoomClick={(r) => {
                     if (isDangerMode) {
                       toggleDangerZone(String(r));
@@ -1178,8 +1178,8 @@ export default function StaffDashboard() {
                       toast.success(`Target set to Unit ${r} for broadcasting.`);
                       setActiveTab('broadcast');
                     }
-                  }} 
-                  showLegend 
+                  }}
+                  showLegend
                 />
               </GlassCard>
             </div>

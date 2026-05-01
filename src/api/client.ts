@@ -213,9 +213,26 @@ export const api = {
   deleteStaff: (staff_id: string) =>
     apiFetch<{ success: boolean; message: string }>(`/staff/${encodeURIComponent(staff_id)}`, { method: 'DELETE' }),
 
+
   resendEmail: (roomNumber: number) =>
     apiFetch<{ success: boolean; message: string }>('/resend-email', {
       method: 'POST',
       body: JSON.stringify({ roomNumber }),
     }),
+
+  // ─── Danger Zones ───
+  getDangerZones: () =>
+    apiFetch<{ room_id: string; level: string }[]>('/danger-zones'),
+
+  upsertDangerZone: (roomId: string, level: string) =>
+    apiFetch<{ success: boolean }>('/danger-zones', {
+      method: 'POST',
+      body: JSON.stringify({ roomId, level }),
+    }),
+
+  deleteDangerZone: (roomId: string) =>
+    apiFetch<{ success: boolean }>(`/danger-zones/${encodeURIComponent(roomId)}`, { method: 'DELETE' }),
+
+  clearAllDangerZones: () =>
+    apiFetch<{ success: boolean }>('/danger-zones', { method: 'DELETE' }),
 };

@@ -7,7 +7,7 @@ import Button from '../../components/Button/Button';
 import { useAppStore } from '../../store/useAppStore';
 
 const CARD_VARIANTS: Variants = {
-  hidden:  { opacity: 0, y: 28 },
+  hidden: { opacity: 0, y: 28 },
   visible: (i: number) => ({
     opacity: 1, y: 0,
     transition: { delay: i * 0.12, duration: 0.45, ease: 'easeOut' },
@@ -17,7 +17,7 @@ const CARD_VARIANTS: Variants = {
 export default function LandingPage() {
   const navigate = useNavigate();
   const guestProfile = useAppStore((s) => s.guestProfile);
-  const activeRole   = useAppStore((s) => s.activeRole);
+  const activeRole = useAppStore((s) => s.activeRole);
 
   // Auto-login from cache
   if (guestProfile) {
@@ -130,7 +130,7 @@ export default function LandingPage() {
           transition={{ delay: 0.6 }}
           className="text-white/25 text-xs mt-12 text-center max-w-sm"
         >
-          Aligned with UN Sustainable Development Goals 3, 10, and 11. 
+          Aligned with UN Sustainable Development Goals 3, 10, and 11.
           Empowering communities through accessible technology.
         </motion.p>
       </div>

@@ -79,23 +79,23 @@ interface FloorConfig {
 
 // ─── Area styles ─────────────────────────────────────────────────────────────
 const AREA_STYLE: Record<AreaType, { fill: string; stroke: string; color: string }> = {
-  exit:       { fill: '#052e16', stroke: '#16a34a', color: '#4ade80' },
-  lobby:      { fill: '#1e3560', stroke: '#3b82f6', color: '#93c5fd' },
-  stairwell:  { fill: '#1e2d3d', stroke: '#475569', color: '#94a3b8' },
-  elevator:   { fill: '#1c1f2e', stroke: '#6b7280', color: '#cbd5e1' },
+  exit: { fill: '#052e16', stroke: '#16a34a', color: '#4ade80' },
+  lobby: { fill: '#1e3560', stroke: '#3b82f6', color: '#93c5fd' },
+  stairwell: { fill: '#1e2d3d', stroke: '#475569', color: '#94a3b8' },
+  elevator: { fill: '#1c1f2e', stroke: '#6b7280', color: '#cbd5e1' },
   restaurant: { fill: '#3b1702', stroke: '#d97706', color: '#fbbf24' },
-  bar:        { fill: '#2e1065', stroke: '#7c3aed', color: '#c084fc' },
-  pool:       { fill: '#082f49', stroke: '#0369a1', color: '#38bdf8' },
-  gym:        { fill: '#14532d', stroke: '#16a34a', color: '#4ade80' },
+  bar: { fill: '#2e1065', stroke: '#7c3aed', color: '#c084fc' },
+  pool: { fill: '#082f49', stroke: '#0369a1', color: '#38bdf8' },
+  gym: { fill: '#14532d', stroke: '#16a34a', color: '#4ade80' },
   conference: { fill: '#172554', stroke: '#1d4ed8', color: '#7dd3fc' },
-  wc:         { fill: '#1c1917', stroke: '#57534e', color: '#a8a29e' },
-  kids:       { fill: '#713f12', stroke: '#d97706', color: '#fde68a' },
-  lounge:     { fill: '#3b0764', stroke: '#9333ea', color: '#e879f9' },
-  spa:        { fill: '#500724', stroke: '#db2777', color: '#f9a8d4' },
-  business:   { fill: '#0c1a2e', stroke: '#1e40af', color: '#bae6fd' },
-  corridor:   { fill: '#060e1a', stroke: '#1e293b', color: '#475569' },
-  assembly:   { fill: '#7f1d1d', stroke: '#dc2626', color: '#fca5a5' },
-  vending:    { fill: '#1a2a1a', stroke: '#3d5427', color: '#86efac' },
+  wc: { fill: '#1c1917', stroke: '#57534e', color: '#a8a29e' },
+  kids: { fill: '#713f12', stroke: '#d97706', color: '#fde68a' },
+  lounge: { fill: '#3b0764', stroke: '#9333ea', color: '#e879f9' },
+  spa: { fill: '#500724', stroke: '#db2777', color: '#f9a8d4' },
+  business: { fill: '#0c1a2e', stroke: '#1e40af', color: '#bae6fd' },
+  corridor: { fill: '#060e1a', stroke: '#1e293b', color: '#475569' },
+  assembly: { fill: '#7f1d1d', stroke: '#dc2626', color: '#fca5a5' },
+  vending: { fill: '#1a2a1a', stroke: '#3d5427', color: '#86efac' },
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -121,10 +121,10 @@ const TYPE_LABELS: Record<string, string> = {
 // ─── Room styles ─────────────────────────────────────────────────────────────
 const ROOM_STYLE = {
   available: { fill: '#052e16', stroke: '#16a34a', numColor: '#4ade80', label: 'Available' },
-  occupied:  { fill: '#450a0a', stroke: '#dc2626', numColor: '#f87171', label: 'Occupied' },
-  warning:   { fill: '#431407', stroke: '#f97316', numColor: '#fb923c', label: 'Warning' },
-  danger:    { fill: '#3b0000', stroke: '#991b1b', numColor: '#fca5a5', label: 'Danger' },
-  unknown:   { fill: '#0f1f35', stroke: '#D4AF3780', numColor: '#ffffff', label: 'Unknown' },
+  occupied: { fill: '#450a0a', stroke: '#dc2626', numColor: '#f87171', label: 'Occupied' },
+  warning: { fill: '#431407', stroke: '#f97316', numColor: '#fb923c', label: 'Warning' },
+  danger: { fill: '#3b0000', stroke: '#991b1b', numColor: '#fca5a5', label: 'Danger' },
+  unknown: { fill: '#0f1f35', stroke: '#D4AF3780', numColor: '#ffffff', label: 'Unknown' },
 };
 
 // ─── Shared utility area definitions ─────────────────────────────────────────
@@ -141,13 +141,13 @@ const sharedUtilAreas = (): AreaDef[] => [
   { id: 'bot-corr', label: '', sublabel: '', type: 'corridor', x: CX, y: BOT_CORR_Y, w: CX2 - CX, h: CORR_H },
   // Left utility elevators & WC
   { id: 'elev-1', label: '🛗', sublabel: 'Transport 1', type: 'elevator', x: LU_X, y: U_E1_Y, w: LU_W, h: U_E1_H },
-  { id: 'wc-1',   label: '🚻', sublabel: "Sanitation 1",   type: 'wc',       x: LU_X, y: U_WC1_Y, w: LU_W, h: U_WC_H },
-  { id: 'wc-2',   label: '🚻', sublabel: "Sanitation 2", type: 'wc',       x: LU_X, y: U_WC2_Y, w: LU_W, h: U_WC_H },
+  { id: 'wc-1', label: '🚻', sublabel: "Sanitation 1", type: 'wc', x: LU_X, y: U_WC1_Y, w: LU_W, h: U_WC_H },
+  { id: 'wc-2', label: '🚻', sublabel: "Sanitation 2", type: 'wc', x: LU_X, y: U_WC2_Y, w: LU_W, h: U_WC_H },
   { id: 'elev-2', label: '🛗', sublabel: 'Transport 2', type: 'elevator', x: LU_X, y: U_E2_Y, w: LU_W, h: U_E2_H },
   // Right utility
   { id: 'elev-3', label: '🛗', sublabel: 'Transport 3', type: 'elevator', x: RU_X, y: U_E1_Y, w: RU_W, h: U_E1_H },
-  { id: 'wc-3',   label: '🚻', sublabel: "Sanitation 3",   type: 'wc',       x: RU_X, y: U_WC1_Y, w: RU_W, h: U_WC_H },
-  { id: 'wc-4',   label: '🚻', sublabel: "Sanitation 4", type: 'wc',       x: RU_X, y: U_WC2_Y, w: RU_W, h: U_WC_H },
+  { id: 'wc-3', label: '🚻', sublabel: "Sanitation 3", type: 'wc', x: RU_X, y: U_WC1_Y, w: RU_W, h: U_WC_H },
+  { id: 'wc-4', label: '🚻', sublabel: "Sanitation 4", type: 'wc', x: RU_X, y: U_WC2_Y, w: RU_W, h: U_WC_H },
   { id: 'elev-4', label: '🛗', sublabel: 'Transport 4', type: 'elevator', x: RU_X, y: U_E2_Y, w: RU_W, h: U_E2_H },
 ];
 
@@ -159,20 +159,20 @@ const FLOOR_DATA: Record<number, FloorConfig> = {
     areas: [
       ...sharedUtilAreas(),
       // Top bar (entry)
-      { id: 'ex-a', label: '🚨', sublabel: 'Exit Alpha', type: 'exit',   x: TB_EX1_X, y: 0, w: EM_W, h: TOP_H },
+      { id: 'ex-a', label: '🚨', sublabel: 'Exit Alpha', type: 'exit', x: TB_EX1_X, y: 0, w: EM_W, h: TOP_H },
       { id: 'lobby', label: '🏥', sublabel: 'Emergency Admissions', type: 'lobby', x: TB_LOBBY_X, y: 0, w: TB_LOBBY_W, h: TOP_H },
-      { id: 'ex-b', label: '🚨', sublabel: 'Exit Beta', type: 'exit',   x: TB_EX2_X, y: 0, w: EM_W, h: TOP_H },
+      { id: 'ex-b', label: '🚨', sublabel: 'Exit Beta', type: 'exit', x: TB_EX2_X, y: 0, w: EM_W, h: TOP_H },
       // Center amenities
       { id: 'restaurant', label: '💊', sublabel: 'Pharmacy', type: 'restaurant', x: ML_X, y: MA_Y1, w: ML_W, h: MA_H1 },
-      { id: 'bar',        label: '🩸', sublabel: 'Blood Bank',         type: 'bar',        x: ML_X, y: MA_Y2, w: ML_W, h: MA_H2 },
-      { id: 'pool',       label: '🚑', sublabel: 'Triage Center', type: 'pool',       x: MC_X, y: CA_Y1, w: MC_W, h: CA_H1 },
-      { id: 'conf',       label: '🩺', sublabel: 'Diagnostic Lab',type: 'conference', x: MC_X, y: CA_Y2, w: MC_W, h: CA_H2 },
-      { id: 'gym',        label: '📦', sublabel: 'Medical Supplies', type: 'gym',        x: MR_X, y: MA_Y1, w: MR_W, h: MA_H1 },
-      { id: 'kids',       label: '👶', sublabel: 'Pediatrics Ward', type: 'kids',      x: MR_X, y: MA_Y2, w: MR_W, h: MA_H2 },
+      { id: 'bar', label: '🩸', sublabel: 'Blood Bank', type: 'bar', x: ML_X, y: MA_Y2, w: ML_W, h: MA_H2 },
+      { id: 'pool', label: '🚑', sublabel: 'Triage Center', type: 'pool', x: MC_X, y: CA_Y1, w: MC_W, h: CA_H1 },
+      { id: 'conf', label: '🩺', sublabel: 'Diagnostic Lab', type: 'conference', x: MC_X, y: CA_Y2, w: MC_W, h: CA_H2 },
+      { id: 'gym', label: '📦', sublabel: 'Medical Supplies', type: 'gym', x: MR_X, y: MA_Y1, w: MR_W, h: MA_H1 },
+      { id: 'kids', label: '👶', sublabel: 'Pediatrics Ward', type: 'kids', x: MR_X, y: MA_Y2, w: MR_W, h: MA_H2 },
       // Bottom bar (assembly)
-      { id: 'ex-c',     label: '🚨', sublabel: 'Exit Gamma', type: 'exit',     x: TB_EX1_X, y: BOTTOM_Y, w: EM_W, h: BOTTOM_H },
+      { id: 'ex-c', label: '🚨', sublabel: 'Exit Gamma', type: 'exit', x: TB_EX1_X, y: BOTTOM_Y, w: EM_W, h: BOTTOM_H },
       { id: 'assembly', label: '⛑️', sublabel: 'Safe Assembly Point', type: 'assembly', x: TB_LOBBY_X, y: BOTTOM_Y, w: TB_LOBBY_W, h: BOTTOM_H },
-      { id: 'ex-d',     label: '🚨', sublabel: 'Exit Delta', type: 'exit',     x: TB_EX2_X, y: BOTTOM_Y, w: EM_W, h: BOTTOM_H },
+      { id: 'ex-d', label: '🚨', sublabel: 'Exit Delta', type: 'exit', x: TB_EX2_X, y: BOTTOM_Y, w: EM_W, h: BOTTOM_H },
     ],
   },
   2: {
@@ -180,18 +180,18 @@ const FLOOR_DATA: Record<number, FloorConfig> = {
     rightNums: [206, 207, 208, 209, 210],
     areas: [
       ...sharedUtilAreas(),
-      { id: 'ex-a',    label: '🚨', sublabel: 'Exit Alpha',       type: 'exit',       x: TB_EX1_X,   y: 0,        w: EM_W,        h: TOP_H    },
-      { id: 'eloblby', label: '🏥', sublabel: 'Main Hallway',       type: 'lobby',      x: TB_LOBBY_X, y: 0,        w: TB_LOBBY_W,  h: TOP_H    },
-      { id: 'ex-b',    label: '🚨', sublabel: 'Exit Beta',       type: 'exit',       x: TB_EX2_X,   y: 0,        w: EM_W,        h: TOP_H    },
-      { id: 'meet-a',  label: '🩻', sublabel: 'Radiology Lab',       type: 'conference', x: ML_X,       y: MA_Y1,    w: ML_W,        h: MA_H1    },
-      { id: 'meet-b',  label: '🧬', sublabel: 'Pathology Lab',       type: 'conference', x: ML_X,       y: MA_Y2,    w: ML_W,        h: MA_H2    },
-      { id: 'skybar',  label: '🫀', sublabel: 'Cardiology Unit',     type: 'lounge',     x: MC_X,       y: CA_Y1,    w: MC_W,        h: CA_H1    },
-      { id: 'minibar', label: '🍎', sublabel: 'Nutrient Station',      type: 'bar',        x: MC_X,       y: CA_Y2,    w: MC_W,        h: CA_H2    },
-      { id: 'biz',     label: '🥼', sublabel: 'Staff Station',         type: 'business',   x: MR_X,       y: MA_Y1,    w: MR_W,        h: MA_H1    },
-      { id: 'vend',    label: '🥫', sublabel: 'Med Vending', type: 'vending',   x: MR_X,       y: MA_Y2,    w: MR_W,        h: MA_H2    },
-      { id: 'ex-c',   label: '🚨', sublabel: 'Exit Gamma',       type: 'exit',       x: TB_EX1_X,   y: BOTTOM_Y, w: EM_W,        h: BOTTOM_H },
-      { id: 'corr2b', label: '',   sublabel: 'Patient Corridor',     type: 'corridor',   x: TB_LOBBY_X, y: BOTTOM_Y, w: TB_LOBBY_W,  h: BOTTOM_H },
-      { id: 'ex-d',   label: '🚨', sublabel: 'Exit Delta',       type: 'exit',       x: TB_EX2_X,   y: BOTTOM_Y, w: EM_W,        h: BOTTOM_H },
+      { id: 'ex-a', label: '🚨', sublabel: 'Exit Alpha', type: 'exit', x: TB_EX1_X, y: 0, w: EM_W, h: TOP_H },
+      { id: 'eloblby', label: '🏥', sublabel: 'Main Hallway', type: 'lobby', x: TB_LOBBY_X, y: 0, w: TB_LOBBY_W, h: TOP_H },
+      { id: 'ex-b', label: '🚨', sublabel: 'Exit Beta', type: 'exit', x: TB_EX2_X, y: 0, w: EM_W, h: TOP_H },
+      { id: 'meet-a', label: '🩻', sublabel: 'Radiology Lab', type: 'conference', x: ML_X, y: MA_Y1, w: ML_W, h: MA_H1 },
+      { id: 'meet-b', label: '🧬', sublabel: 'Pathology Lab', type: 'conference', x: ML_X, y: MA_Y2, w: ML_W, h: MA_H2 },
+      { id: 'skybar', label: '🫀', sublabel: 'Cardiology Unit', type: 'lounge', x: MC_X, y: CA_Y1, w: MC_W, h: CA_H1 },
+      { id: 'minibar', label: '🍎', sublabel: 'Nutrient Station', type: 'bar', x: MC_X, y: CA_Y2, w: MC_W, h: CA_H2 },
+      { id: 'biz', label: '🥼', sublabel: 'Staff Station', type: 'business', x: MR_X, y: MA_Y1, w: MR_W, h: MA_H1 },
+      { id: 'vend', label: '🥫', sublabel: 'Med Vending', type: 'vending', x: MR_X, y: MA_Y2, w: MR_W, h: MA_H2 },
+      { id: 'ex-c', label: '🚨', sublabel: 'Exit Gamma', type: 'exit', x: TB_EX1_X, y: BOTTOM_Y, w: EM_W, h: BOTTOM_H },
+      { id: 'corr2b', label: '', sublabel: 'Patient Corridor', type: 'corridor', x: TB_LOBBY_X, y: BOTTOM_Y, w: TB_LOBBY_W, h: BOTTOM_H },
+      { id: 'ex-d', label: '🚨', sublabel: 'Exit Delta', type: 'exit', x: TB_EX2_X, y: BOTTOM_Y, w: EM_W, h: BOTTOM_H },
     ],
   },
   3: {
@@ -199,18 +199,18 @@ const FLOOR_DATA: Record<number, FloorConfig> = {
     rightNums: [306, 307, 308, 309, 310],
     areas: [
       ...sharedUtilAreas(),
-      { id: 'ex-a',   label: '🚨', sublabel: 'Exit Alpha',       type: 'exit',      x: TB_EX1_X,   y: 0,        w: EM_W,       h: TOP_H    },
-      { id: 'elobby', label: '🏥', sublabel: 'ICU Intake',       type: 'lobby',     x: TB_LOBBY_X, y: 0,        w: TB_LOBBY_W, h: TOP_H    },
-      { id: 'ex-b',   label: '🚨', sublabel: 'Exit Beta',       type: 'exit',      x: TB_EX2_X,   y: 0,        w: EM_W,       h: TOP_H    },
-      { id: 'spa',    label: '🩹', sublabel: 'Acute Recovery', type: 'spa',       x: ML_X,       y: MA_Y1,    w: ML_W,       h: MA_H1    },
-      { id: 'hkp',    label: '🧹', sublabel: 'Sterilization',         type: 'wc',        x: ML_X,       y: MA_Y2,    w: ML_W,       h: MA_H2    },
-      { id: 'terrace',label: '⛺', sublabel: 'Isolation Ward', type: 'lounge',    x: MC_X,       y: CA_Y1,    w: MC_W,       h: CA_H1    },
-      { id: 'rtbar',  label: '📡', sublabel: 'Command Center',          type: 'bar',       x: MC_X,       y: CA_Y2,    w: MC_W,       h: CA_H2    },
-      { id: 'pgym',   label: '📦', sublabel: 'Bulk Storage',          type: 'gym',       x: MR_X,       y: MA_Y1,    w: MR_W,       h: MA_H1    },
-      { id: 'laundry',label: '🧼', sublabel: 'Decontamination',      type: 'wc',        x: MR_X,       y: MA_Y2,    w: MR_W,       h: MA_H2    },
-      { id: 'ex-c',   label: '🚨', sublabel: 'Exit Gamma',       type: 'exit',      x: TB_EX1_X,   y: BOTTOM_Y, w: EM_W,       h: BOTTOM_H },
-      { id: 'corr3b', label: '',   sublabel: 'Service Bay',     type: 'corridor',  x: TB_LOBBY_X, y: BOTTOM_Y, w: TB_LOBBY_W, h: BOTTOM_H },
-      { id: 'ex-d',   label: '🚨', sublabel: 'Exit Delta',       type: 'exit',      x: TB_EX2_X,   y: BOTTOM_Y, w: EM_W,       h: BOTTOM_H },
+      { id: 'ex-a', label: '🚨', sublabel: 'Exit Alpha', type: 'exit', x: TB_EX1_X, y: 0, w: EM_W, h: TOP_H },
+      { id: 'elobby', label: '🏥', sublabel: 'ICU Intake', type: 'lobby', x: TB_LOBBY_X, y: 0, w: TB_LOBBY_W, h: TOP_H },
+      { id: 'ex-b', label: '🚨', sublabel: 'Exit Beta', type: 'exit', x: TB_EX2_X, y: 0, w: EM_W, h: TOP_H },
+      { id: 'spa', label: '🩹', sublabel: 'Acute Recovery', type: 'spa', x: ML_X, y: MA_Y1, w: ML_W, h: MA_H1 },
+      { id: 'hkp', label: '🧹', sublabel: 'Sterilization', type: 'wc', x: ML_X, y: MA_Y2, w: ML_W, h: MA_H2 },
+      { id: 'terrace', label: '⛺', sublabel: 'Isolation Ward', type: 'lounge', x: MC_X, y: CA_Y1, w: MC_W, h: CA_H1 },
+      { id: 'rtbar', label: '📡', sublabel: 'Command Center', type: 'bar', x: MC_X, y: CA_Y2, w: MC_W, h: CA_H2 },
+      { id: 'pgym', label: '📦', sublabel: 'Bulk Storage', type: 'gym', x: MR_X, y: MA_Y1, w: MR_W, h: MA_H1 },
+      { id: 'laundry', label: '🧼', sublabel: 'Decontamination', type: 'wc', x: MR_X, y: MA_Y2, w: MR_W, h: MA_H2 },
+      { id: 'ex-c', label: '🚨', sublabel: 'Exit Gamma', type: 'exit', x: TB_EX1_X, y: BOTTOM_Y, w: EM_W, h: BOTTOM_H },
+      { id: 'corr3b', label: '', sublabel: 'Service Bay', type: 'corridor', x: TB_LOBBY_X, y: BOTTOM_Y, w: TB_LOBBY_W, h: BOTTOM_H },
+      { id: 'ex-d', label: '🚨', sublabel: 'Exit Delta', type: 'exit', x: TB_EX2_X, y: BOTTOM_Y, w: EM_W, h: BOTTOM_H },
     ],
   },
 };
@@ -270,15 +270,15 @@ export default function SafetyMap({
       const danger = getDangerLevel(roomNum);
       if (danger === 'danger') return ROOM_STYLE.danger;
       if (danger === 'warning') return ROOM_STYLE.warning;
-      
+
       const rd = roomMap.get(roomNum);
       if (!rd) return ROOM_STYLE.unknown;
-      
+
       // PRIVACY: Guests shouldn't see if other rooms are occupied
       if (activeRole === 'guest' && roomNum !== Number(guestRoomNum)) {
-         return ROOM_STYLE.available;
+        return ROOM_STYLE.available;
       }
-      
+
       return rd.status === 'occupied' ? ROOM_STYLE.occupied : ROOM_STYLE.available;
     },
     [roomMap, getDangerLevel]
@@ -291,14 +291,14 @@ export default function SafetyMap({
       const statusLabel = danger
         ? danger.charAt(0).toUpperCase() + danger.slice(1) + ' Zone'
         : rd?.status === 'occupied'
-        ? 'Occupied'
-        : 'Available';
+          ? 'Occupied'
+          : 'Available';
 
       setSelected({
         kind: 'room',
         label: `Unit ${roomNum}`,
         sublabel: statusLabel,
-        type: rd?.status ?? 'unknown',
+        type: danger ? danger : (rd?.status ?? 'unknown'),
         roomData: rd,
       });
       onRoomClick?.(roomNum);
@@ -329,7 +329,7 @@ export default function SafetyMap({
     }
     if (!startNum) return null;
 
-    const leftIdx  = floor.leftNums.indexOf(startNum);
+    const leftIdx = floor.leftNums.indexOf(startNum);
     const rightIdx = floor.rightNums.indexOf(startNum);
     if (leftIdx === -1 && rightIdx === -1) return null; // room not on this floor
 
@@ -347,13 +347,13 @@ export default function SafetyMap({
     // Room door nodes — at the corridor edge (x=90 left, x=810 right), at room‐center Y
     for (let i = 0; i < 5; i++) {
       const y = CONTENT_Y + i * ROOM_STEP + ROOM_H / 2;
-      add(`LD${i}`, CX,   y);          // left  door (corridor edge)
-      add(`RD${i}`, CX2,  y);          // right door (corridor edge)
+      add(`LD${i}`, CX, y);          // left  door (corridor edge)
+      add(`RD${i}`, CX2, y);          // right door (corridor edge)
     }
 
     // Left & right vertical corridors — connect doors to top/bottom corners
-    add('LC_TOP', CX,  TOP_H + CORR_H / 2);        // 90, 63
-    add('LC_BOT', CX,  BOT_CORR_Y + CORR_H / 2);   // 90, 459
+    add('LC_TOP', CX, TOP_H + CORR_H / 2);        // 90, 63
+    add('LC_BOT', CX, BOT_CORR_Y + CORR_H / 2);   // 90, 459
     add('RC_TOP', CX2, TOP_H + CORR_H / 2);         // 810, 63
     add('RC_BOT', CX2, BOT_CORR_Y + CORR_H / 2);   // 810, 459
 
@@ -367,17 +367,17 @@ export default function SafetyMap({
 
     // Top & bottom horizontal corridors — connect left corner ↔ exits ↔ right corner
     const EM_W_HALF = 70 / 2;
-    add('EXA', CX + EM_W_HALF,        TOP_H / 2,               '🟢 Exit A');
-    add('EXB', CX2 - 70 + EM_W_HALF,  TOP_H / 2,               '🟢 Exit B');
-    add('EXC', CX + EM_W_HALF,        BOTTOM_Y + BOTTOM_H / 2, '🟢 Exit C');
-    add('EXD', CX2 - 70 + EM_W_HALF,  BOTTOM_Y + BOTTOM_H / 2, '🟢 Exit D');
+    add('EXA', CX + EM_W_HALF, TOP_H / 2, '🟢 Exit A');
+    add('EXB', CX2 - 70 + EM_W_HALF, TOP_H / 2, '🟢 Exit B');
+    add('EXC', CX + EM_W_HALF, BOTTOM_Y + BOTTOM_H / 2, '🟢 Exit C');
+    add('EXD', CX2 - 70 + EM_W_HALF, BOTTOM_Y + BOTTOM_H / 2, '🟢 Exit D');
 
     link('LC_TOP', 'EXA');
-    link('EXA',    'EXB');
-    link('EXB',    'RC_TOP');
+    link('EXA', 'EXB');
+    link('EXB', 'RC_TOP');
     link('LC_BOT', 'EXC');
-    link('EXC',    'EXD');
-    link('EXD',    'RC_BOT');
+    link('EXC', 'EXD');
+    link('EXD', 'RC_BOT');
 
     // ── Danger penalty setup ──────────────────────────────────────────────────
     const dangerSet = new Set<string>();
@@ -391,13 +391,13 @@ export default function SafetyMap({
 
     // ── A* ────────────────────────────────────────────────────────────────────
     const startId = leftIdx !== -1 ? `LD${leftIdx}` : `RD${rightIdx}`;
-    const GOALS   = new Set(['EXA', 'EXB', 'EXC', 'EXD']);
+    const GOALS = new Set(['EXA', 'EXB', 'EXC', 'EXD']);
     const DANGER_PENALTY = 5000;
 
-    const open    = new Set([startId]);
+    const open = new Set([startId]);
     const cameFrom: Record<string, string> = {};
-    const gScore: Record<string, number>   = {};
-    const fScore: Record<string, number>   = {};
+    const gScore: Record<string, number> = {};
+    const fScore: Record<string, number> = {};
 
     for (const id of Object.keys(nodes)) { gScore[id] = Infinity; fScore[id] = Infinity; }
     gScore[startId] = 0;
@@ -411,7 +411,7 @@ export default function SafetyMap({
     while (open.size > 0) {
       // Pick lowest fScore
       let current = '';
-      let lowest  = Infinity;
+      let lowest = Infinity;
       for (const id of open) { if (fScore[id] < lowest) { lowest = fScore[id]; current = id; } }
       if (!current) break;
 
@@ -431,14 +431,14 @@ export default function SafetyMap({
       open.delete(current);
 
       for (const nbId of nodes[current].neighbors) {
-        const dist      = Math.hypot(nodes[current].x - nodes[nbId].x, nodes[current].y - nodes[nbId].y);
-        const penalty   = dangerSet.has(nbId) ? DANGER_PENALTY : 0;
+        const dist = Math.hypot(nodes[current].x - nodes[nbId].x, nodes[current].y - nodes[nbId].y);
+        const penalty = dangerSet.has(nbId) ? DANGER_PENALTY : 0;
         const tentative = gScore[current] + dist + penalty;
 
         if (tentative < gScore[nbId]) {
           cameFrom[nbId] = current;
-          gScore[nbId]   = tentative;
-          fScore[nbId]   = tentative + h(nbId);
+          gScore[nbId] = tentative;
+          fScore[nbId] = tentative + h(nbId);
           open.add(nbId);
         }
       }
@@ -456,7 +456,7 @@ export default function SafetyMap({
   const renderRoom = (num: number, x: number, idx: number) => {
     const y = CONTENT_Y + idx * ROOM_STEP;
     const style = getRoomStyle(num);
-    const isSos = sosRooms.includes(num);
+    const isSos = sosRooms.includes(num) || activeAlerts.some(a => Number(a.room_number) === num);
 
     return (
       <g
@@ -573,17 +573,15 @@ export default function SafetyMap({
             <button
               key={f}
               onClick={() => { setActiveFloor(f); setSelected(null); }}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-                activeFloor === f
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${activeFloor === f
                   ? 'bg-gold text-navy'
                   : 'bg-white/10 text-white/60 hover:bg-white/20'
-              }`}
+                }`}
             >
               Level {f}
               <span
-                className={`text-xs rounded-full px-1.5 py-0.5 ${
-                  activeFloor === f ? 'bg-navy/30' : 'bg-white/10'
-                }`}
+                className={`text-xs rounded-full px-1.5 py-0.5 ${activeFloor === f ? 'bg-navy/30' : 'bg-white/10'
+                  }`}
               >
                 {occupiedCount}/{allNums.length}
               </span>
@@ -678,13 +676,13 @@ export default function SafetyMap({
           <div className="flex flex-col gap-1">
             <span className="text-white font-semibold text-sm">{selected.label}</span>
             <span
-              className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${
-                selected.type === 'occupied'
-                  ? 'bg-danger/20 text-red-400'
-                  : selected.type === 'available'
-                  ? 'bg-safe/20 text-green-400'
-                  : 'bg-white/10 text-white/60'
-              }`}
+              className={`text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${selected.type === 'occupied' ? 'bg-danger/20 text-red-400'
+                  : selected.type === 'danger' ? 'bg-red-500 text-white shadow-sm'
+                    : selected.type === 'warning' ? 'bg-warning/20 text-orange-400'
+                      : selected.type === 'available' ? 'bg-safe/20 text-green-400'
+                        : selected.type === 'exit' ? 'bg-[#052e16] border border-green-600 text-green-400'
+                          : 'bg-white/10 text-white/60'
+                }`}
             >
               {selected.sublabel}
             </span>
@@ -722,6 +720,10 @@ export default function SafetyMap({
           <span className="flex items-center gap-1.5 text-yellow-400">
             <span className="w-3 h-3 rounded bg-warning/20 border border-warning inline-block" />
             Warning Zone
+          </span>
+          <span className="flex items-center gap-1.5 text-red-500">
+            <span className="w-3 h-3 rounded bg-[#3b0000] border border-[#991b1b] inline-block" />
+            Danger Zone
           </span>
           <span className="flex items-center gap-1.5 text-green-400">
             <span className="w-3 h-3 rounded bg-[#052e16] border border-green-600 inline-block" />
