@@ -10,15 +10,29 @@ This project enhances resident safety and staff responsiveness during emergencie
 - **Responder Portal**: Live situational awareness tracking for emergency first-responders.
 
 ## Tech Stack
-- Frontend: React 19, TypeScript, Vite, Tailwind CSS, Framer Motion, Zustand
-- Backend: Python, Flask, SQLite
+- Frontend: React 18+, TypeScript, Vite, Tailwind CSS, Framer Motion, Zustand, Supabase client
+- Backend: Python 3.10+, Flask, Supabase (PostgREST API via httpx), Google Gemini AI
 
 ## Setup Instructions
 
-### Backend
-1. `cd backend`
-2. `pip install -r requirements.txt` (Installs Flask and flask-cors)
-3. `python app.py`
+### Environment Variables
+Create a `.env` file in the project root with the following:
+```
+# Backend
+SUPABASE_URL=your_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+GEMINI_API_KEY=your_google_ai_key
+GMAIL_USER=your_email@gmail.com
+GMAIL_APP_PASSWORD=your_app_password
+
+# Frontend
+VITE_SUPABASE_URL=your_project_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
+```
+
+### Backend Setup
+1. `pip install -r backend/requirements.txt`
+2. `python backend/app.py`
 
 ### Frontend
 1. `npm install`
