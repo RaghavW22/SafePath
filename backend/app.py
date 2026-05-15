@@ -10,15 +10,16 @@ from datetime import datetime
 import os
 import uuid
 from deep_translator import GoogleTranslator
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 from supabase_helper import select, select_one, insert, upsert, update, delete, init_db
 
 load_dotenv()
 
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
+client = None
 if GEMINI_KEY:
-    genai.configure(api_key=GEMINI_KEY)
+    client = genai.Client(api_key=GEMINI_KEY)
 
 app = Flask(__name__)
 CORS(app)
@@ -228,12 +229,14 @@ def create_alert():
         return jsonify({'error': str(e)}), 500
 
     # ASYNC Gemini Severity Check
-    if GEMINI_KEY:
+    if client:
         def analyze_severity_async(aid, msg):
             try:
-                model = genai.GenerativeModel('gemini-flash-latest')
                 prompt = f"Analyze emergency message and return exactly one number 1-5. Message: '{msg}'"
-                resp = model.generate_content(prompt)
+                resp = client.models.generate_content(
+                    model='gemini-1.5-flash',
+                    contents=prompt
+                )
                 import re
                 m = re.search(r'[1-5]', resp.text)
                 if m:
@@ -316,11 +319,13 @@ def get_broadcasts():
 @app.route('/api/ai/suggest-broadcast', methods=['GET'])
 def ai_suggest_broadcast():
     target = request.args.get('target', 'all')
-    if GEMINI_KEY:
+    if client:
         try:
-            model = genai.GenerativeModel('gemini-flash-latest')
             prompt = f"Write a single sentence emergency broadcast announcement to guests in {target}. Keep it extremely concise, professional, and clear."
-            resp = model.generate_content(prompt)
+            resp = client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=prompt
+            )
             suggestion = resp.text.strip().replace('"', '')
             return jsonify({'suggestion': suggestion})
         except Exception as e:

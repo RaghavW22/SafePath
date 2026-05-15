@@ -156,7 +156,7 @@ export const api = {
     }),
 
   acknowledgeAlert: (id: string) =>
-    apiFetch<{ success: boolean }>(`/alerts/${id}`, { 
+    apiFetch<{ success: boolean }>(`/alerts/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ status: 'acknowledged' })
     }),

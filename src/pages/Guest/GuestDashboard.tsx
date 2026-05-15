@@ -178,10 +178,10 @@ export default function GuestDashboard() {
 
   useEffect(() => {
     // Initial data fetch
-    api.getRooms().then(setRooms).catch(() => {});
+    api.getRooms().then(setRooms).catch(() => { });
     api.getDangerZones().then(zones => {
       setDangerZones(zones.map(z => ({ roomId: z.room_id, level: z.level as 'warning' | 'danger' })));
-    }).catch(() => {});
+    }).catch(() => { });
     fetchBroadcasts();
 
     // Check SOS status
@@ -191,21 +191,21 @@ export default function GuestDashboard() {
           (a: any) => a.room_number === Number(guestProfile.roomNumber) && a.status === 'active'
         );
         setSosActive(hasActive);
-      }).catch(() => {});
+      }).catch(() => { });
     }
 
     // Polling fallback instead of Supabase Realtime
     const pollInterval = setInterval(() => {
       // Fetch Rooms
-      api.getRooms().then(setRooms).catch(() => {});
-      
+      api.getRooms().then(setRooms).catch(() => { });
+
       // Fetch Broadcasts
       fetchBroadcasts();
 
       // Fetch Danger Zones
       api.getDangerZones().then(zones => {
         setDangerZones(zones.map(z => ({ roomId: z.room_id, level: z.level as 'warning' | 'danger' })));
-      }).catch(() => {});
+      }).catch(() => { });
 
       // Fetch Alerts
       if (guestProfile?.roomNumber) {
@@ -214,7 +214,7 @@ export default function GuestDashboard() {
             (a: any) => a.room_number === Number(guestProfile.roomNumber) && a.status === 'active'
           );
           setSosActive(hasActive);
-        }).catch(() => {});
+        }).catch(() => { });
       }
     }, 2000); // Poll every 2 seconds
 
